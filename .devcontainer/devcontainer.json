@@ -1,10 +1,10 @@
 {
-  "name": "plugin-template",
+  "name": "plugin-stackit",
   "build": {
     "context": ".",
     "dockerfile": "Dockerfile"
   },
-  "workspaceFolder": "/workspaces/plugin-template",
+  "workspaceFolder": "/workspaces/plugin-stackit",
   "forwardPorts": [8080],
   "customizations": {
     "vscode": {
