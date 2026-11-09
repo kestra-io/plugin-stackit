@@ -1,16 +1,40 @@
-This is the Kestra plugin template. Use it as a starting point for building a new plugin.
+The STACKIT plugin connects Kestra flows to STACKIT (compute, storage, projects, load balancers) using the official Java SDK.
 
-## What this template ships
+## Authentication
 
-- `Example` is a sample `RunnableTask` that reverses an input string.
-- `Trigger` is a sample polling trigger that fires an execution at random.
+Tasks share connection settings:
 
-## How to build your plugin
+- `serviceAccountKey` — service account key JSON (inline, a Kestra secret, or a `kestra://` URI to a stored file)
+- `projectId` — STACKIT project UUID
+- `region` — STACKIT region (for example `eu01`)
 
-1. Rename the package `io.kestra.plugin.stackit` to your own, for example `io.kestra.plugin.myservice`.
-2. Update `group`, `name`, `title`, and `description` in `src/main/resources/metadata/index.yaml`.
-3. Replace `src/main/resources/icons/plugin-icon.svg` with your service's icon.
-4. Replace the `Example` and `Trigger` classes with your real tasks and triggers.
-5. Replace this how-to with documentation for your plugin.
+## IaaS — Create server
 
-Run `./gradlew lintPluginDocs` before pushing to validate the plugin documentation.
+Task type: `io.kestra.plugin.stackit.iaas.server.Create`
+
+Creates a server in the given project and region. Required fields: `name`, `machineType`, `availabilityZone`. Optional: `imageId`.
+
+Example flow:
+
+```yaml
+id: stackit_create_server
+namespace: company.team
+
+tasks:
+  - id: create_server
+    type: io.kestra.plugin.stackit.iaas.server.Create
+    serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
+    projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
+    region: eu01
+    name: kestra-demo
+    machineType: g2i.2
+    availabilityZone: eu01-1
+
+  - id: log_server
+    type: io.kestra.plugin.core.log.Log
+    message: "Server {{ outputs.create_server.serverId }} created"
+```
+
+Outputs include `serverId`, `name`, `status`, `machineType`, and `availabilityZone`.
+
+Run `./gradlew lintPluginDocs` before pushing to validate plugin documentation.
