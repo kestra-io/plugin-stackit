@@ -84,6 +84,7 @@ class CreateWireMockTest {
         return Create.builder()
             .id("wiremock-create")
             .type(Create.class.getName())
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
             .projectId(Property.ofValue(StackitTestFixtures.PROJECT_ID.toString()))
             .region(Property.ofValue("eu01"))
             .name(Property.ofValue("kestra-demo"))

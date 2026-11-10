@@ -46,15 +46,15 @@ class NetworkWireMockTest {
 
         Create create = Create.builder()
             .id("create").type(Create.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).name(Property.ofValue("kestra-network"))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).name(Property.ofValue("kestra-network"))
             .build();
         List list = List.builder()
             .id("list").type(List.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
         Delete delete = Delete.builder()
             .id("delete").type(Delete.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).networkId(Property.ofValue(ID))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).networkId(Property.ofValue(ID))
             .build();
 
         assertThat(((Create.Output) StackitWireMock.run(runContextFactory, wireMock, create)).getNetworkId(), is(ID));

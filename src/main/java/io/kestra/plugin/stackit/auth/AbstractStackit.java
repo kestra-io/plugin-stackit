@@ -22,9 +22,8 @@ import java.util.UUID;
 /**
  * Shared STACKIT connection.
  *
- * <p>The service account key is not a task property. The SDK reads it from the environment, which is option 3
- * in the STACKIT authentication example:
- * {@code STACKIT_SERVICE_ACCOUNT_KEY} and, only when the key JSON has no private key, {@code STACKIT_PRIVATE_KEY}.
+ * <p>The service account key JSON is a task property. Kestra renders {@code serviceAccountKey} and this class
+ * passes that string to {@link CoreConfiguration#serviceAccountKey(String)}, which keeps the key in memory.
  */
 @SuperBuilder
 @ToString
@@ -33,6 +32,14 @@ import java.util.UUID;
 @NoArgsConstructor
 public abstract class AbstractStackit extends Task {
     public static final int DEFAULT_TIMEOUT_MILLIS = 30_000;
+
+    @Schema(
+        title = "Service account key",
+        description = "Service account key JSON. Pass it with a Kestra secret, for example {{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}."
+    )
+    @PluginProperty(group = "connection")
+    @ToString.Exclude
+    private Property<String> serviceAccountKey;
 
     @Schema(title = "Project ID", description = "STACKIT project UUID.")
     @PluginProperty(group = "connection")
@@ -48,8 +55,9 @@ public abstract class AbstractStackit extends Task {
         this.endpointOverride = override;
     }
 
-    protected IaasClient iaasClient() throws IOException {
-        CoreConfiguration configuration = new CoreConfiguration();
+    protected IaasClient iaasClient(RunContext runContext) throws IOException, IllegalVariableEvaluationException {
+        CoreConfiguration configuration = new CoreConfiguration()
+            .serviceAccountKey(required(runContext, this.serviceAccountKey, "serviceAccountKey"));
         if (endpointOverride != null) {
             configuration.customEndpoint(endpointOverride.customEndpoint());
             configuration.tokenCustomUrl(endpointOverride.tokenCustomUrl());

@@ -30,6 +30,7 @@ import java.util.UUID;
     tasks:
       - id: delete_network
         type: io.kestra.plugin.stackit.iaas.network.Delete
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
         networkId: 11111111-1111-1111-1111-111111111111
@@ -44,7 +45,7 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
         UUID id = requiredUuid(runContext, networkId, "networkId");
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             call(() -> {
                 client.api().deleteNetwork(project, stackitRegion, id);
                 return null;

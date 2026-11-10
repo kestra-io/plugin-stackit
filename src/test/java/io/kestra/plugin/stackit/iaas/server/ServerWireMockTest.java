@@ -48,23 +48,23 @@ class ServerWireMockTest {
 
         Get get = Get.builder()
             .id("get").type(Get.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         List list = List.builder()
             .id("list").type(List.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
         Start start = Start.builder()
             .id("start").type(Start.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         Stop stop = Stop.builder()
             .id("stop").type(Stop.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         Delete delete = Delete.builder()
             .id("delete").type(Delete.class.getName())
-            .projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
 
         assertThat(((Get.Output) StackitWireMock.run(runContextFactory, wireMock, get)).getStatus(), is("ACTIVE"));

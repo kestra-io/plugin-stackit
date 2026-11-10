@@ -44,6 +44,7 @@ import java.util.UUID;
                 tasks:
                   - id: create_server
                     type: io.kestra.plugin.stackit.iaas.server.Create
+                    serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
                     projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
                     region: eu01
                     name: kestra-demo
@@ -144,7 +145,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
         UUID stackitProjectId = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             Server server = call(() -> client.api().createServer(stackitProjectId, stackitRegion, payload));
             String serverId = server.getId() == null ? null : server.getId().toString();
             return Output.builder()

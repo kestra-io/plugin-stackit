@@ -32,6 +32,7 @@ import lombok.experimental.SuperBuilder;
     tasks:
       - id: create_network
         type: io.kestra.plugin.stackit.iaas.network.Create
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
         name: kestra-network
@@ -73,7 +74,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
                 .prefixLength(renderedPrefix == null ? 24L : renderedPrefix.longValue())));
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             Network network = call(() -> client.api().createNetwork(project, stackitRegion, payload));
             return Output.builder()
                 .networkId(network.getId() == null ? null : network.getId().toString())

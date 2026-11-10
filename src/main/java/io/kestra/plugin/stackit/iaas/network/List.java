@@ -30,6 +30,7 @@ import java.util.ArrayList;
     tasks:
       - id: list_networks
         type: io.kestra.plugin.stackit.iaas.network.List
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
     """))
@@ -38,7 +39,7 @@ public class List extends AbstractStackit implements RunnableTask<List.Output> {
     public Output run(RunContext runContext) throws Exception {
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             NetworkListResponse response = call(() -> client.api().listNetworks(project, stackitRegion, null));
             java.util.List<String> ids = new ArrayList<>();
             java.util.List<String> names = new ArrayList<>();

@@ -31,6 +31,7 @@ import java.util.UUID;
     tasks:
       - id: get_server
         type: io.kestra.plugin.stackit.iaas.server.Get
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
         serverId: 11111111-1111-1111-1111-111111111111
@@ -45,7 +46,7 @@ public class Get extends AbstractStackit implements RunnableTask<Get.Output> {
         UUID id = requiredUuid(runContext, serverId, "serverId");
         UUID project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             Server server = call(() -> client.api().getServer(project, stackitRegion, id, false));
             return Output.builder()
                 .serverId(server.getId() == null ? null : server.getId().toString())

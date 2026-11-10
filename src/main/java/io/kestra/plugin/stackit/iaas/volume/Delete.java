@@ -30,6 +30,7 @@ import java.util.UUID;
     tasks:
       - id: delete_volume
         type: io.kestra.plugin.stackit.iaas.volume.Delete
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
         volumeId: 11111111-1111-1111-1111-111111111111
@@ -49,7 +50,7 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
         Boolean renderedForce = optionalBoolean(runContext, force);
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             call(() -> {
                 client.api().deleteVolume(project, stackitRegion, id, renderedForce != null && renderedForce);
                 return null;

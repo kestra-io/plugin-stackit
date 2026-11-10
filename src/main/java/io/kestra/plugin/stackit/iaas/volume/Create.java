@@ -30,6 +30,7 @@ import lombok.experimental.SuperBuilder;
     tasks:
       - id: create_volume
         type: io.kestra.plugin.stackit.iaas.volume.Create
+        serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
         projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
         region: eu01
         name: kestra-data
@@ -71,7 +72,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         }
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
-        try (IaasClient client = iaasClient()) {
+        try (IaasClient client = iaasClient(runContext)) {
             Volume volume = call(() -> client.api().createVolume(project, stackitRegion, payload));
             return Output.builder()
                 .volumeId(volume.getId() == null ? null : volume.getId().toString())
