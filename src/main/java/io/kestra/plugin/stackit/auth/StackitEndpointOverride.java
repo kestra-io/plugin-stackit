@@ -1,8 +1,7 @@
-package io.kestra.plugin.stackit;
+package io.kestra.plugin.stackit.auth;
 
 /**
- * Optional STACKIT API and token URLs. Used in tests with WireMock; production tasks return {@code null} from
- * {@link AbstractStackit#stackitEndpointOverride()}.
+ * Test-only API and token URLs. Production leaves this unset so the SDK uses STACKIT's public hosts.
  */
 public record StackitEndpointOverride(String customEndpoint, String tokenCustomUrl) {
 

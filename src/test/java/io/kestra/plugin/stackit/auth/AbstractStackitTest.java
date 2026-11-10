@@ -1,4 +1,4 @@
-package io.kestra.plugin.stackit;
+package io.kestra.plugin.stackit.auth;
 
 import cloud.stackit.sdk.core.exception.ApiException;
 import org.junit.jupiter.api.Test;

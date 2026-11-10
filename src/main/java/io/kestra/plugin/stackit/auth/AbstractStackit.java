@@ -1,6 +1,8 @@
-package io.kestra.plugin.stackit;
+package io.kestra.plugin.stackit.auth;
 
+import cloud.stackit.sdk.core.config.CoreConfiguration;
 import cloud.stackit.sdk.core.exception.ApiException;
+import cloud.stackit.sdk.iaas.v2api.api.IaasApi;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
@@ -12,15 +14,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import cloud.stackit.sdk.iaas.v2api.api.IaasApi;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+/**
+ * Shared STACKIT connection.
+ *
+ * <p>The service account key is not a task property. The SDK reads it from the environment, which is option 3
+ * in the STACKIT authentication example:
+ * {@code STACKIT_SERVICE_ACCOUNT_KEY} and, only when the key JSON has no private key, {@code STACKIT_PRIVATE_KEY}.
+ */
 @SuperBuilder
 @ToString
 @EqualsAndHashCode
@@ -28,58 +33,73 @@ import java.util.UUID;
 @NoArgsConstructor
 public abstract class AbstractStackit extends Task {
     public static final int DEFAULT_TIMEOUT_MILLIS = 30_000;
-    private static final String KESTRA_URI_PREFIX = "kestra://";
 
-    @Schema(
-        title = "Service account key",
-        description = "Service account key JSON. Pass the JSON text, a {{ secret('...') }} expression, or a kestra:// URI whose file contains the JSON."
-    )
-    @PluginProperty(group = "connection", secret = true)
-    @ToString.Exclude
-    private Property<String> serviceAccountKey;
-
-    @Schema(
-        title = "Project ID",
-        description = "STACKIT project UUID."
-    )
+    @Schema(title = "Project ID", description = "STACKIT project UUID.")
     @PluginProperty(group = "connection")
     private Property<String> projectId;
 
-    @Schema(
-        title = "Region",
-        description = "STACKIT region, for example eu01."
-    )
+    @Schema(title = "Region", description = "STACKIT region, for example eu01.")
     @PluginProperty(group = "connection")
     private Property<String> region;
 
     private transient StackitEndpointOverride endpointOverride;
 
-    /**
-     * Test-only hook so WireMock can stand in for STACKIT without subclassing {@code @Plugin} tasks.
-     */
     public void applyEndpointOverrideForTests(StackitEndpointOverride override) {
         this.endpointOverride = override;
     }
 
-    protected StackitEndpointOverride stackitEndpointOverride() {
-        return endpointOverride;
+    protected IaasClient iaasClient() throws IOException {
+        CoreConfiguration configuration = new CoreConfiguration();
+        if (endpointOverride != null) {
+            configuration.customEndpoint(endpointOverride.customEndpoint());
+            configuration.tokenCustomUrl(endpointOverride.tokenCustomUrl());
+        }
+        IaasApi api = new IaasApi(configuration);
+        api.getApiClient().setConnectTimeout(DEFAULT_TIMEOUT_MILLIS);
+        api.getApiClient().setReadTimeout(DEFAULT_TIMEOUT_MILLIS);
+        api.getApiClient().setWriteTimeout(DEFAULT_TIMEOUT_MILLIS);
+        return new IaasClient(api);
     }
 
-    protected IaasClient iaasClient(RunContext runContext) throws Exception {
-        return StackitTestClients.buildIaasClient(readServiceAccountKey(runContext), stackitEndpointOverride());
+    protected UUID projectId(RunContext runContext) throws IllegalVariableEvaluationException {
+        return UUID.fromString(required(runContext, this.projectId, "projectId"));
     }
 
     protected String region(RunContext runContext) throws IllegalVariableEvaluationException {
         return required(runContext, this.region, "region");
     }
 
-    protected UUID projectId(RunContext runContext) throws IllegalVariableEvaluationException {
-        String rendered = required(runContext, this.projectId, "projectId");
-        try {
-            return UUID.fromString(rendered);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("projectId must be a UUID, got '" + rendered + "'.", e);
+    protected UUID requiredUuid(RunContext runContext, Property<String> property, String name) throws IllegalVariableEvaluationException {
+        return UUID.fromString(required(runContext, property, name));
+    }
+
+    protected String required(RunContext runContext, Property<String> property, String name) throws IllegalVariableEvaluationException {
+        String rendered = optional(runContext, property);
+        if (rendered == null) {
+            throw new IllegalArgumentException(name + " is required.");
         }
+        return rendered;
+    }
+
+    protected String optional(RunContext runContext, Property<String> property) throws IllegalVariableEvaluationException {
+        if (property == null) {
+            return null;
+        }
+        return runContext.render(property).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+    }
+
+    protected Integer optionalInteger(RunContext runContext, Property<Integer> property) throws IllegalVariableEvaluationException {
+        if (property == null) {
+            return null;
+        }
+        return runContext.render(property).as(Integer.class).orElse(null);
+    }
+
+    protected Boolean optionalBoolean(RunContext runContext, Property<Boolean> property) throws IllegalVariableEvaluationException {
+        if (property == null) {
+            return null;
+        }
+        return runContext.render(property).as(Boolean.class).orElse(null);
     }
 
     protected <T> T call(StackitCall<T> action) throws Exception {
@@ -90,7 +110,7 @@ public abstract class AbstractStackit extends Task {
         }
     }
 
-    static Exception translate(ApiException exception) {
+    public static Exception translate(ApiException exception) {
         if (exception.getCode() == 403) {
             return new StackitClientException(
                 "STACKIT returned 403. Check the service account permissions.",
@@ -101,26 +121,6 @@ public abstract class AbstractStackit extends Task {
             "STACKIT request failed with status " + exception.getCode() + ": " + exception.getMessage(),
             exception
         );
-    }
-
-    private String readServiceAccountKey(RunContext runContext) throws Exception {
-        String rendered = required(runContext, this.serviceAccountKey, "serviceAccountKey");
-        if (!rendered.startsWith(KESTRA_URI_PREFIX)) {
-            return rendered;
-        }
-        try (InputStream input = runContext.storage().getFile(URI.create(rendered))) {
-            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-        }
-    }
-
-    private static String required(RunContext runContext, Property<String> property, String name) throws IllegalVariableEvaluationException {
-        String rendered = property == null
-            ? null
-            : runContext.render(property).as(String.class).orElse(null);
-        if (rendered == null || rendered.isBlank()) {
-            throw new IllegalArgumentException(name + " is required.");
-        }
-        return rendered;
     }
 
     @FunctionalInterface

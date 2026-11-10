@@ -29,7 +29,7 @@ class CreateLiveTest {
 
     @Test
     void createsServerInStackit() throws Exception {
-        String serviceAccountKey = requiredEnv("STACKIT_SERVICE_ACCOUNT_KEY");
+        requiredEnv("STACKIT_SERVICE_ACCOUNT_KEY");
         String projectId = requiredEnv("STACKIT_PROJECT_ID");
         String region = System.getenv().getOrDefault("STACKIT_REGION", "eu01");
         String zone = System.getenv().getOrDefault("STACKIT_AVAILABILITY_ZONE", region + "-1");
@@ -37,12 +37,12 @@ class CreateLiveTest {
         Create task = Create.builder()
             .id("live-create")
             .type(Create.class.getName())
-            .serviceAccountKey(Property.ofValue(serviceAccountKey))
             .projectId(Property.ofValue(projectId))
             .region(Property.ofValue(region))
             .name(Property.ofValue("kestra-live-" + IdUtils.create().substring(0, 8)))
             .machineType(Property.ofValue(System.getenv().getOrDefault("STACKIT_MACHINE_TYPE", "g2i.2")))
             .availabilityZone(Property.ofValue(zone))
+            .imageId(Property.ofValue(requiredEnv("STACKIT_IMAGE_ID")))
             .build();
 
         RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());

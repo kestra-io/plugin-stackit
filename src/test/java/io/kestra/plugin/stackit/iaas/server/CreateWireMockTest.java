@@ -7,7 +7,8 @@ import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.TestsUtils;
-import io.kestra.plugin.stackit.StackitEndpointOverride;
+import io.kestra.plugin.stackit.TestEnvironment;
+import io.kestra.plugin.stackit.auth.StackitEndpointOverride;
 import io.kestra.plugin.stackit.StackitTestFixtures;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
@@ -38,6 +39,7 @@ class CreateWireMockTest {
         wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
         wireMock.start();
         WireMock.configureFor("localhost", wireMock.port());
+        TestEnvironment.set("STACKIT_SERVICE_ACCOUNT_KEY", StackitTestFixtures.serviceAccountKeyJson());
     }
 
     @AfterEach
@@ -82,12 +84,13 @@ class CreateWireMockTest {
         return Create.builder()
             .id("wiremock-create")
             .type(Create.class.getName())
-            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
             .projectId(Property.ofValue(StackitTestFixtures.PROJECT_ID.toString()))
             .region(Property.ofValue("eu01"))
             .name(Property.ofValue("kestra-demo"))
             .machineType(Property.ofValue("g2i.2"))
             .availabilityZone(Property.ofValue("eu01-1"))
+            .imageId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
+            .bootVolumeSizeGiB(Property.ofValue(32))
             .build();
     }
 
