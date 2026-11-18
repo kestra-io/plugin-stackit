@@ -64,49 +64,49 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         title = "Server name",
         description = "Name of the server to create."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> name;
 
     @Schema(
         title = "Machine type",
         description = "Required machine type name that exists in the region. The SDK sample name is t2i.1."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> machineType;
 
     @Schema(
         title = "Availability zone",
         description = "Availability zone, for example eu01-1. Leave empty to let STACKIT choose."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "advanced")
     private Property<String> availabilityZone;
 
     @Schema(
         title = "Image ID",
         description = "Operating system image UUID used as the boot volume source. List images in the project to get a valid id."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> imageId;
 
     @Schema(
         title = "Boot volume size (GiB)",
         description = "Boot disk size in GiB. Defaults to 32, the size used by the STACKIT Java SDK example."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "advanced")
     private Property<Integer> bootVolumeSizeGiB;
 
     @Schema(
         title = "Keypair name",
         description = "Optional SSH keypair already created in the project."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "advanced")
     private Property<String> keypairName;
 
     @Schema(
         title = "Network ID",
         description = "Optional network UUID to attach. Leave empty to use the project default network."
     )
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "advanced")
     private Property<String> networkId;
 
     @Override

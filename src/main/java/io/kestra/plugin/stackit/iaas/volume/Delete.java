@@ -37,11 +37,11 @@ import java.util.UUID;
     """))
 public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
     @Schema(title = "Volume ID")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "main")
     private Property<String> volumeId;
 
     @Schema(title = "Force", description = "SDK deleteVolume force flag. Defaults to false.")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "advanced")
     private Property<Boolean> force;
 
     @Override

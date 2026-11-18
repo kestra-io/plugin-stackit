@@ -39,19 +39,19 @@ import lombok.experimental.SuperBuilder;
     """))
 public class Create extends AbstractStackit implements RunnableTask<Create.Output> {
     @Schema(title = "Volume name")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "main")
     private Property<String> name;
 
     @Schema(title = "Size in GiB", description = "SDK field CreateVolumePayload.size.")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "main")
     private Property<Integer> sizeGiB;
 
     @Schema(title = "Availability zone", description = "SDK field availabilityZone, for example eu01-1.")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "main")
     private Property<String> availabilityZone;
 
     @Schema(title = "Performance class")
-    @PluginProperty(group = "volume")
+    @PluginProperty(group = "advanced")
     private Property<String> performanceClass;
 
     @Override

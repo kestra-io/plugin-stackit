@@ -1,0 +1,6 @@
+title: IaaS
+description: STACKIT compute and network tasks.
+pluginType: SUBGROUP
+group: io.kestra.plugin.stackit.iaas
+name: IaaS
+body: "Parent group for the server, volume, and network tasks."

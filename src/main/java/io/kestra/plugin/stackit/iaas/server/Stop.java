@@ -37,7 +37,7 @@ import java.util.UUID;
     """))
 public class Stop extends AbstractStackit implements RunnableTask<Stop.Output> {
     @Schema(title = "Server ID")
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> serverId;
 
     @Override

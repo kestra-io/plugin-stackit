@@ -1,0 +1,6 @@
+title: Server
+description: Create, get, list, start, stop, and delete STACKIT servers.
+pluginType: SUBGROUP
+group: io.kestra.plugin.stackit.iaas.server
+name: Server
+body: "Contains the Create, Get, List, Start, Stop, and Delete tasks."

@@ -39,23 +39,23 @@ import lombok.experimental.SuperBuilder;
     """))
 public class Create extends AbstractStackit implements RunnableTask<Create.Output> {
     @Schema(title = "Network name")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "main")
     private Property<String> name;
 
     @Schema(title = "DHCP", description = "Defaults to true, as in the SDK example.")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "advanced")
     private Property<Boolean> dhcp;
 
     @Schema(title = "Routed", description = "Defaults to false, as in the SDK example.")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "advanced")
     private Property<Boolean> routed;
 
     @Schema(title = "IPv4 prefix length", description = "Defaults to 24.")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "advanced")
     private Property<Integer> prefixLength;
 
     @Schema(title = "Nameserver", description = "Defaults to 8.8.8.8, as in the SDK example.")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "advanced")
     private Property<String> nameserver;
 
     @Override

@@ -38,7 +38,7 @@ import java.util.UUID;
     """))
 public class Get extends AbstractStackit implements RunnableTask<Get.Output> {
     @Schema(title = "Server ID")
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> serverId;
 
     @Override

@@ -37,7 +37,7 @@ import java.util.UUID;
     """))
 public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
     @Schema(title = "Server ID")
-    @PluginProperty(group = "server")
+    @PluginProperty(group = "main")
     private Property<String> serverId;
 
     @Override

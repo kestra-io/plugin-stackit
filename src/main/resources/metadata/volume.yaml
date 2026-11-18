@@ -1,0 +1,6 @@
+title: Volume
+description: Create, list, and delete STACKIT volumes.
+pluginType: SUBGROUP
+group: io.kestra.plugin.stackit.iaas.volume
+name: Volume
+body: "Contains the Create, List, and Delete tasks."

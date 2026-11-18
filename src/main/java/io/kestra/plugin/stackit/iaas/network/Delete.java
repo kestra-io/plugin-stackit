@@ -37,7 +37,7 @@ import java.util.UUID;
     """))
 public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
     @Schema(title = "Network ID")
-    @PluginProperty(group = "network")
+    @PluginProperty(group = "main")
     private Property<String> networkId;
 
     @Override
