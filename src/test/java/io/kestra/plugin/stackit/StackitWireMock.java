@@ -3,10 +3,9 @@ package io.kestra.plugin.stackit;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
-import io.kestra.core.utils.TestsUtils;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
-import io.kestra.plugin.stackit.auth.StackitEndpointOverride;
 
 import java.util.Map;
 
@@ -14,14 +13,16 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 
 public final class StackitWireMock {
+
+    public static final int WIREMOCK_PORT = 18089;
+
     private StackitWireMock() {
     }
 
     public static WireMockServer start() {
-        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().port(WIREMOCK_PORT));
         wireMock.start();
         WireMock.configureFor("localhost", wireMock.port());
-        TestEnvironment.set("STACKIT_SERVICE_ACCOUNT_KEY", StackitTestFixtures.serviceAccountKeyJson());
         wireMock.stubFor(WireMock.post(WireMock.urlPathEqualTo("/token"))
             .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("""
                 {"access_token":"wiremock-access-token","token_type":"Bearer","expires_in":3600,"refresh_token":"wiremock-refresh-token"}
@@ -39,10 +40,10 @@ public final class StackitWireMock {
     }
 
     public static Object run(RunContextFactory runContextFactory, WireMockServer wireMock, AbstractStackit task) throws Exception {
-        task.applyEndpointOverrideForTests(StackitEndpointOverride.wireMockOnPort(wireMock.port()));
+        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
         try {
-            return task.getClass().getMethod("run", io.kestra.core.runners.RunContext.class)
-                .invoke(task, TestsUtils.mockRunContext(runContextFactory, task, Map.of()));
+            return task.getClass().getMethod("run", RunContext.class)
+                .invoke(task, runContext);
         } catch (java.lang.reflect.InvocationTargetException exception) {
             Throwable cause = exception.getCause();
             if (cause instanceof Exception nested) {

@@ -2,15 +2,14 @@ package io.kestra.plugin.stackit.iaas.server;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
-import io.kestra.core.utils.TestsUtils;
-import io.kestra.plugin.stackit.TestEnvironment;
-import io.kestra.plugin.stackit.auth.StackitEndpointOverride;
 import io.kestra.plugin.stackit.StackitTestFixtures;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
+import io.kestra.plugin.stackit.StackitTestRunContext;
+import io.kestra.plugin.stackit.StackitWireMock;
+import io.kestra.core.junit.annotations.KestraTest;
+import io.kestra.core.utils.IdUtils;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +25,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@MicronautTest
+@KestraTest
 class CreateWireMockTest {
 
     @Inject
@@ -36,10 +35,7 @@ class CreateWireMockTest {
 
     @BeforeEach
     void startWireMock() {
-        wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
-        wireMock.start();
-        WireMock.configureFor("localhost", wireMock.port());
-        TestEnvironment.set("STACKIT_SERVICE_ACCOUNT_KEY", StackitTestFixtures.serviceAccountKeyJson());
+        wireMock = StackitWireMock.start();
     }
 
     @AfterEach
@@ -51,12 +47,10 @@ class CreateWireMockTest {
 
     @Test
     void createsServerThroughWireMock() throws Exception {
-        stubTokenSuccess();
         stubCreateServerSuccess();
 
         Create task = baseTask();
-        task.applyEndpointOverrideForTests(StackitEndpointOverride.wireMockOnPort(wireMock.port()));
-        RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
+        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
 
         Create.Output output = task.run(runContext);
 
@@ -68,13 +62,11 @@ class CreateWireMockTest {
 
     @Test
     void mapsForbiddenToPermissionMessage() throws Exception {
-        stubTokenSuccess();
         wireMock.stubFor(WireMock.post(urlPathMatching("/v2/projects/.*/regions/.*/servers"))
             .willReturn(aResponse().withStatus(403).withBody("{\"message\":\"forbidden\"}")));
 
         Create task = baseTask();
-        task.applyEndpointOverrideForTests(StackitEndpointOverride.wireMockOnPort(wireMock.port()));
-        RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
+        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
 
         Exception failure = assertThrows(Exception.class, () -> task.run(runContext));
         assertThat(failure.getMessage(), containsString("Check the service account permissions"));
@@ -82,7 +74,7 @@ class CreateWireMockTest {
 
     private static Create baseTask() {
         return Create.builder()
-            .id("wiremock-create")
+            .id(IdUtils.create())
             .type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
             .projectId(Property.ofValue(StackitTestFixtures.PROJECT_ID.toString()))
@@ -93,21 +85,6 @@ class CreateWireMockTest {
             .imageId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
             .bootVolumeSizeGiB(Property.ofValue(32))
             .build();
-    }
-
-    private void stubTokenSuccess() {
-        wireMock.stubFor(WireMock.post(WireMock.urlPathEqualTo("/token"))
-            .willReturn(aResponse()
-                .withStatus(200)
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
-                    {
-                      "access_token": "wiremock-access-token",
-                      "token_type": "Bearer",
-                      "expires_in": 3600,
-                      "refresh_token": "wiremock-refresh-token"
-                    }
-                    """)));
     }
 
     private void stubCreateServerSuccess() {

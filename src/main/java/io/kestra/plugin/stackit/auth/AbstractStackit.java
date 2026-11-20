@@ -3,12 +3,17 @@ package io.kestra.plugin.stackit.auth;
 import cloud.stackit.sdk.core.config.CoreConfiguration;
 import cloud.stackit.sdk.core.exception.ApiException;
 import cloud.stackit.sdk.iaas.v2api.api.IaasApi;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
 import io.kestra.core.runners.RunContext;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,6 +29,9 @@ import java.util.UUID;
  *
  * <p>The service account key JSON is a task property. Kestra renders {@code serviceAccountKey} and this class
  * passes that string to {@link CoreConfiguration#serviceAccountKey(String)}, which keeps the key in memory.
+ *
+ * <p>Optional API and token URLs can be set on the worker via plugin configuration
+ * ({@link StackitPluginConfiguration#TYPE_ALIAS}), not as flow task properties.
  */
 @SuperBuilder
 @ToString
@@ -33,35 +41,41 @@ import java.util.UUID;
 public abstract class AbstractStackit extends Task {
     public static final int DEFAULT_TIMEOUT_MILLIS = 30_000;
 
+    private static final ObjectMapper JSON = new ObjectMapper();
+
     @Schema(
         title = "Service account key",
-        description = "Service account key JSON. Pass it with a Kestra secret, for example {{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}."
+        description = "Service account key JSON from the STACKIT portal, including credentials.privateKey. "
+            + "Pass it with a Kestra secret, for example {{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}."
     )
-    @PluginProperty(group = "connection")
+    @PluginProperty(secret = true, group = "connection")
     @ToString.Exclude
-    private Property<String> serviceAccountKey;
+    @NotNull
+    private Property<@NotBlank String> serviceAccountKey;
 
     @Schema(title = "Project ID", description = "STACKIT project UUID.")
     @PluginProperty(group = "connection")
-    private Property<String> projectId;
+    @NotNull
+    private Property<@NotBlank String> projectId;
 
     @Schema(title = "Region", description = "STACKIT region, for example eu01.")
     @PluginProperty(group = "connection")
-    private Property<String> region;
-
-    private transient StackitEndpointOverride endpointOverride;
-
-    public void applyEndpointOverrideForTests(StackitEndpointOverride override) {
-        this.endpointOverride = override;
-    }
+    @NotNull
+    private Property<@NotBlank String> region;
 
     protected IaasClient iaasClient(RunContext runContext) throws IOException, IllegalVariableEvaluationException {
+        String serviceAccountKeyJson = runContext.render(this.serviceAccountKey).as(String.class).orElseThrow();
+        requireEmbeddedPrivateKey(serviceAccountKeyJson);
         CoreConfiguration configuration = new CoreConfiguration()
-            .serviceAccountKey(required(runContext, this.serviceAccountKey, "serviceAccountKey"));
-        if (endpointOverride != null) {
-            configuration.customEndpoint(endpointOverride.customEndpoint());
-            configuration.tokenCustomUrl(endpointOverride.tokenCustomUrl());
-        }
+            .serviceAccountKey(serviceAccountKeyJson);
+        runContext.pluginConfiguration(StackitPluginConfiguration.CUSTOM_ENDPOINT)
+            .map(String.class::cast)
+            .filter(value -> !value.isBlank())
+            .ifPresent(configuration::customEndpoint);
+        runContext.pluginConfiguration(StackitPluginConfiguration.TOKEN_CUSTOM_URL)
+            .map(String.class::cast)
+            .filter(value -> !value.isBlank())
+            .ifPresent(configuration::tokenCustomUrl);
         IaasApi api = new IaasApi(configuration);
         api.getApiClient().setConnectTimeout(DEFAULT_TIMEOUT_MILLIS);
         api.getApiClient().setReadTimeout(DEFAULT_TIMEOUT_MILLIS);
@@ -70,23 +84,29 @@ public abstract class AbstractStackit extends Task {
     }
 
     protected UUID projectId(RunContext runContext) throws IllegalVariableEvaluationException {
-        return UUID.fromString(required(runContext, this.projectId, "projectId"));
+        return UUID.fromString(runContext.render(this.projectId).as(String.class).orElseThrow());
     }
 
     protected String region(RunContext runContext) throws IllegalVariableEvaluationException {
-        return required(runContext, this.region, "region");
+        return runContext.render(this.region).as(String.class).orElseThrow();
     }
 
-    protected UUID requiredUuid(RunContext runContext, Property<String> property, String name) throws IllegalVariableEvaluationException {
-        return UUID.fromString(required(runContext, property, name));
+    protected String requiredString(RunContext runContext, Property<String> property) throws IllegalVariableEvaluationException {
+        return runContext.render(property).as(String.class).orElseThrow();
     }
 
-    protected String required(RunContext runContext, Property<String> property, String name) throws IllegalVariableEvaluationException {
-        String rendered = optional(runContext, property);
-        if (rendered == null) {
-            throw new IllegalArgumentException(name + " is required.");
+    static void requireEmbeddedPrivateKey(String serviceAccountKeyJson) {
+        try {
+            JsonNode privateKey = JSON.readTree(serviceAccountKeyJson).path("credentials").path("privateKey");
+            if (!privateKey.isTextual() || privateKey.asText().isBlank()) {
+                throw new IllegalArgumentException(
+                    "serviceAccountKey JSON must include credentials.privateKey. "
+                        + "Create the service account key in the STACKIT portal so the downloaded JSON contains the private key."
+                );
+            }
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException("serviceAccountKey must be valid JSON.", exception);
         }
-        return rendered;
     }
 
     protected String optional(RunContext runContext, Property<String> property) throws IllegalVariableEvaluationException {

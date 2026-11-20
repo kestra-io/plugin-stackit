@@ -1,11 +1,12 @@
 package io.kestra.plugin.stackit.iaas.server;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.stackit.StackitTestFixtures;
 import io.kestra.plugin.stackit.StackitWireMock;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 
-@MicronautTest
+@KestraTest
 class ServerWireMockTest {
     private static final String ID = StackitTestFixtures.SERVER_ID.toString();
     private static final String PROJECT = StackitTestFixtures.PROJECT_ID.toString();
@@ -47,23 +48,23 @@ class ServerWireMockTest {
         StackitWireMock.stubEmpty(wireMock, "DELETE", "/v2/projects/.*/regions/.*/servers/[^/]+$");
 
         Get get = Get.builder()
-            .id("get").type(Get.class.getName())
+            .id(IdUtils.create()).type(Get.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         List list = List.builder()
-            .id("list").type(List.class.getName())
+            .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
         Start start = Start.builder()
-            .id("start").type(Start.class.getName())
+            .id(IdUtils.create()).type(Start.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         Stop stop = Stop.builder()
-            .id("stop").type(Stop.class.getName())
+            .id(IdUtils.create()).type(Stop.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
         Delete delete = Delete.builder()
-            .id("delete").type(Delete.class.getName())
+            .id(IdUtils.create()).type(Delete.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
 

@@ -5,7 +5,7 @@ import io.kestra.core.runners.RunContext;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.core.utils.TestsUtils;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
+import io.kestra.core.junit.annotations.KestraTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.notNullValue;
  * Run only when real STACKIT credentials are available:
  * {@code STACKIT_LIVE_TEST=true STACKIT_SERVICE_ACCOUNT_KEY='...' STACKIT_PROJECT_ID='...' ./gradlew test --tests CreateLiveTest}
  */
-@MicronautTest
+@KestraTest
 @EnabledIfEnvironmentVariable(named = "STACKIT_LIVE_TEST", matches = "true")
 class CreateLiveTest {
 
@@ -35,7 +35,7 @@ class CreateLiveTest {
         String zone = System.getenv().getOrDefault("STACKIT_AVAILABILITY_ZONE", region + "-1");
 
         Create task = Create.builder()
-            .id("live-create")
+            .id(IdUtils.create())
             .type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(serviceAccountKey))
             .projectId(Property.ofValue(projectId))
@@ -46,11 +46,30 @@ class CreateLiveTest {
             .imageId(Property.ofValue(requiredEnv("STACKIT_IMAGE_ID")))
             .build();
 
-        RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
-        Create.Output output = task.run(runContext);
-
-        assertThat(output.getServerId(), notNullValue());
-        UUID.fromString(output.getServerId());
+        String serverId = null;
+        try {
+            RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
+            Create.Output output = task.run(runContext);
+            serverId = output.getServerId();
+            assertThat(serverId, notNullValue());
+            UUID.fromString(serverId);
+        } finally {
+            if (serverId != null) {
+                Delete delete = Delete.builder()
+                    .id(IdUtils.create())
+                    .type(Delete.class.getName())
+                    .serviceAccountKey(Property.ofValue(serviceAccountKey))
+                    .projectId(Property.ofValue(projectId))
+                    .region(Property.ofValue(region))
+                    .serverId(Property.ofValue(serverId))
+                    .build();
+                try {
+                    delete.run(TestsUtils.mockRunContext(runContextFactory, delete, Map.of()));
+                } catch (Exception exception) {
+                    throw new IllegalStateException("Failed to delete live test server " + serverId, exception);
+                }
+            }
+        }
     }
 
     private static String requiredEnv(String name) {

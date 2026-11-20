@@ -1,11 +1,12 @@
 package io.kestra.plugin.stackit.iaas.volume;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import io.kestra.core.junit.annotations.KestraTest;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.stackit.StackitTestFixtures;
 import io.kestra.plugin.stackit.StackitWireMock;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 
-@MicronautTest
+@KestraTest
 class VolumeWireMockTest {
     private static final String ID = StackitTestFixtures.SERVER_ID.toString();
     private static final String PROJECT = StackitTestFixtures.PROJECT_ID.toString();
@@ -45,16 +46,16 @@ class VolumeWireMockTest {
         StackitWireMock.stubEmpty(wireMock, "DELETE", "/v2/projects/.*/regions/.*/volumes/[^/]+$");
 
         Create create = Create.builder()
-            .id("create").type(Create.class.getName())
+            .id(IdUtils.create()).type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .name(Property.ofValue("kestra-data")).sizeGiB(Property.ofValue(10)).availabilityZone(Property.ofValue("eu01-1"))
             .build();
         List list = List.builder()
-            .id("list").type(List.class.getName())
+            .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
         Delete delete = Delete.builder()
-            .id("delete").type(Delete.class.getName())
+            .id(IdUtils.create()).type(Delete.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).volumeId(Property.ofValue(ID))
             .build();
 

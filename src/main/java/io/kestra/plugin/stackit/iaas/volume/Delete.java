@@ -8,6 +8,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -23,7 +25,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Delete a STACKIT volume", description = "Deletes a volume. force matches the SDK deleteVolume force flag.")
-@Plugin(examples = @Example(title = "Delete a volume", full = true, code = """
+@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Delete a volume", full = true, code = """
     id: stackit_delete_volume
     namespace: company.team
 
@@ -38,7 +40,8 @@ import java.util.UUID;
 public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
     @Schema(title = "Volume ID")
     @PluginProperty(group = "main")
-    private Property<String> volumeId;
+    @NotNull
+    private Property<@NotBlank String> volumeId;
 
     @Schema(title = "Force", description = "SDK deleteVolume force flag. Defaults to false.")
     @PluginProperty(group = "advanced")
@@ -46,7 +49,7 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        UUID id = requiredUuid(runContext, volumeId, "volumeId");
+        UUID id = UUID.fromString(runContext.render(volumeId).as(String.class).orElseThrow());
         Boolean renderedForce = optionalBoolean(runContext, force);
         var project = projectId(runContext);
         String stackitRegion = region(runContext);

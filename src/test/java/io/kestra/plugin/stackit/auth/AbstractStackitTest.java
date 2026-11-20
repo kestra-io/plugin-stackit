@@ -1,10 +1,13 @@
 package io.kestra.plugin.stackit.auth;
 
 import cloud.stackit.sdk.core.exception.ApiException;
+import io.kestra.plugin.stackit.StackitTestFixtures;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AbstractStackitTest {
     @Test
@@ -21,5 +24,21 @@ class AbstractStackitTest {
 
         assertThat(translated.getMessage(), containsString("404"));
         assertThat(translated.getMessage(), containsString("missing"));
+    }
+
+    @Test
+    void acceptsServiceAccountKeyWithEmbeddedPrivateKey() {
+        assertDoesNotThrow(() -> AbstractStackit.requireEmbeddedPrivateKey(StackitTestFixtures.serviceAccountKeyJson()));
+    }
+
+    @Test
+    void rejectsServiceAccountKeyWithoutPrivateKey() {
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> AbstractStackit.requireEmbeddedPrivateKey("{\"id\":\"key\",\"credentials\":{}}")
+        );
+
+        assertThat(exception.getMessage(), containsString("credentials.privateKey"));
+        assertThat(exception.getMessage(), containsString("STACKIT portal"));
     }
 }

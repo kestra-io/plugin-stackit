@@ -7,3 +7,9 @@ kestra:
     type: local
     local:
       base-path: /tmp/unittest
+  plugins:
+    configurations:
+      - type: io.kestra.plugin.stackit
+        values:
+          customEndpoint: http://localhost:18089
+          tokenCustomUrl: http://localhost:18089/token

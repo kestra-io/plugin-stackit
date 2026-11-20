@@ -14,6 +14,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -33,6 +35,7 @@ import java.util.UUID;
     description = "Creates a server in a STACKIT project and region."
 )
 @Plugin(
+    aliases = "io.kestra.plugin.stackit",
     examples = {
         @Example(
             title = "Create a server and log its ID",
@@ -65,14 +68,16 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         description = "Name of the server to create."
     )
     @PluginProperty(group = "main")
-    private Property<String> name;
+    @NotNull
+    private Property<@NotBlank String> name;
 
     @Schema(
         title = "Machine type",
         description = "Required machine type name that exists in the region. The SDK sample name is t2i.1."
     )
     @PluginProperty(group = "main")
-    private Property<String> machineType;
+    @NotNull
+    private Property<@NotBlank String> machineType;
 
     @Schema(
         title = "Availability zone",
@@ -86,7 +91,8 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         description = "Operating system image UUID used as the boot volume source. List images in the project to get a valid id."
     )
     @PluginProperty(group = "main")
-    private Property<String> imageId;
+    @NotNull
+    private Property<@NotBlank String> imageId;
 
     @Schema(
         title = "Boot volume size (GiB)",
@@ -111,10 +117,10 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String serverName = required(runContext, name, "name");
-        String renderedMachineType = required(runContext, machineType, "machineType");
+        String serverName = requiredString(runContext, name);
+        String renderedMachineType = requiredString(runContext, machineType);
         String renderedZone = optional(runContext, availabilityZone);
-        String renderedImageId = required(runContext, imageId, "imageId");
+        String renderedImageId = requiredString(runContext, imageId);
         Integer renderedSize = optionalInteger(runContext, bootVolumeSizeGiB);
         String renderedKeypair = optional(runContext, keypairName);
         String renderedNetworkId = optional(runContext, networkId);

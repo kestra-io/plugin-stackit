@@ -12,6 +12,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -24,8 +26,11 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "Create a STACKIT network", description = "Creates a network using the same defaults as the STACKIT Java SDK example.")
-@Plugin(examples = @Example(title = "Create a network", full = true, code = """
+@Schema(
+    title = "Create a STACKIT network",
+    description = "Creates a network in a project and region. DHCP, routing, and prefix length use plugin defaults when omitted; nameserver is sent only when you set it."
+)
+@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Create a network", full = true, code = """
     id: stackit_create_network
     namespace: company.team
 
@@ -40,7 +45,8 @@ import lombok.experimental.SuperBuilder;
 public class Create extends AbstractStackit implements RunnableTask<Create.Output> {
     @Schema(title = "Network name")
     @PluginProperty(group = "main")
-    private Property<String> name;
+    @NotNull
+    private Property<@NotBlank String> name;
 
     @Schema(title = "DHCP", description = "Defaults to true, as in the SDK example.")
     @PluginProperty(group = "advanced")
@@ -54,24 +60,30 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @PluginProperty(group = "advanced")
     private Property<Integer> prefixLength;
 
-    @Schema(title = "Nameserver", description = "Defaults to 8.8.8.8, as in the SDK example.")
+    @Schema(
+        title = "Nameserver",
+        description = "Optional DNS resolver for the network IPv4 block. When omitted, no nameserver is sent and STACKIT applies its default."
+    )
     @PluginProperty(group = "advanced")
     private Property<String> nameserver;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String networkName = required(runContext, name, "name");
+        String networkName = requiredString(runContext, name);
         Boolean renderedDhcp = optionalBoolean(runContext, dhcp);
         Boolean renderedRouted = optionalBoolean(runContext, routed);
         Integer renderedPrefix = optionalInteger(runContext, prefixLength);
         String renderedNameserver = optional(runContext, nameserver);
+        CreateNetworkIPv4WithPrefixLength ipv4 = new CreateNetworkIPv4WithPrefixLength()
+            .prefixLength(renderedPrefix == null ? 24L : renderedPrefix.longValue());
+        if (renderedNameserver != null) {
+            ipv4.addNameserversItem(renderedNameserver);
+        }
         CreateNetworkPayload payload = new CreateNetworkPayload()
             .name(networkName)
             .dhcp(renderedDhcp == null || renderedDhcp)
             .routed(renderedRouted != null && renderedRouted)
-            .ipv4(new CreateNetworkIPv4(new CreateNetworkIPv4WithPrefixLength()
-                .addNameserversItem(renderedNameserver == null ? "8.8.8.8" : renderedNameserver)
-                .prefixLength(renderedPrefix == null ? 24L : renderedPrefix.longValue())));
+            .ipv4(new CreateNetworkIPv4(ipv4));
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
         try (IaasClient client = iaasClient(runContext)) {

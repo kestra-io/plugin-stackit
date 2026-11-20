@@ -8,6 +8,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -22,8 +24,10 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "Delete a STACKIT network")
-@Plugin(examples = @Example(title = "Delete a network", full = true, code = """
+@Schema(title = "Delete a STACKIT network",
+    description = "Deletes a network in a STACKIT project and region."
+)
+@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Delete a network", full = true, code = """
     id: stackit_delete_network
     namespace: company.team
 
@@ -38,11 +42,12 @@ import java.util.UUID;
 public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
     @Schema(title = "Network ID")
     @PluginProperty(group = "main")
-    private Property<String> networkId;
+    @NotNull
+    private Property<@NotBlank String> networkId;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        UUID id = requiredUuid(runContext, networkId, "networkId");
+        UUID id = UUID.fromString(runContext.render(networkId).as(String.class).orElseThrow());
         var project = projectId(runContext);
         String stackitRegion = region(runContext);
         try (IaasClient client = iaasClient(runContext)) {

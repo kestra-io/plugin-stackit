@@ -3,11 +3,8 @@ package io.kestra.plugin.stackit.iaas.server;
 import cloud.stackit.sdk.iaas.v2api.model.Server;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
-import io.kestra.core.models.annotations.PluginProperty;
-import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
-import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -16,15 +13,13 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
-
 @SuperBuilder
 @ToString
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
 @Schema(title = "Get a STACKIT server", description = "Fetches one server by id.")
-@Plugin(examples = @Example(title = "Get a server", full = true, code = """
+@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Get a server", full = true, code = """
     id: stackit_get_server
     namespace: company.team
 
@@ -36,16 +31,13 @@ import java.util.UUID;
         region: eu01
         serverId: 11111111-1111-1111-1111-111111111111
     """))
-public class Get extends AbstractStackit implements RunnableTask<Get.Output> {
-    @Schema(title = "Server ID")
-    @PluginProperty(group = "main")
-    private Property<String> serverId;
+public class Get extends AbstractStackitServerById implements RunnableTask<Get.Output> {
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        UUID id = requiredUuid(runContext, serverId, "serverId");
-        UUID project = projectId(runContext);
+        var project = projectId(runContext);
         String stackitRegion = region(runContext);
+        var id = serverUuid(runContext);
         try (IaasClient client = iaasClient(runContext)) {
             Server server = call(() -> client.api().getServer(project, stackitRegion, id, false));
             return Output.builder()
