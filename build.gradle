@@ -49,6 +49,14 @@ dependencies {
     annotationProcessor group: "io.kestra", name: "processor", version: kestraVersion
     compileOnly group: "io.kestra", name: "core", version: kestraVersion
     compileOnly group: "io.kestra", name: "script", version: kestraVersion
+
+    // STACKIT SDK core (authentication, shared client)
+    implementation "cloud.stackit.sdk:core:0.4.1"
+    // IaaS: servers, volumes, networks
+    implementation "cloud.stackit.sdk:iaas:1.6.0"
+
+    // The SDK references OkHttp in its public client constructors, but publishes it as runtime-only.
+    compileOnly "com.squareup.okhttp3:okhttp:4.12.0"
 }
 
 
@@ -87,6 +95,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter-engine"
     testImplementation "org.hamcrest:hamcrest"
     testImplementation "org.hamcrest:hamcrest-library"
+    testImplementation "org.wiremock:wiremock-jetty12"
 }
 
 /**********************************************************************************************************************\

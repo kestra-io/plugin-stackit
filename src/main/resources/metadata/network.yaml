@@ -1,0 +1,6 @@
+title: Network
+description: Create, list, and delete STACKIT networks.
+pluginType: SUBGROUP
+group: io.kestra.plugin.stackit.iaas.network
+name: Network
+body: "Contains the Create, List, and Delete tasks."

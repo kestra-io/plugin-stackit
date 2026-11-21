@@ -1,0 +1,6 @@
+title: Connection
+description: Shared STACKIT project, region, and service-account authentication.
+pluginType: SUBGROUP
+group: io.kestra.plugin.stackit.auth
+name: Connection
+body: "Contains the shared connection used by every STACKIT task."

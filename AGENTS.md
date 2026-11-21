@@ -3,13 +3,14 @@
 ## What
 
 - Provides plugin components under `io.kestra.plugin.stackit`.
-- Includes classes such as `Example`, `Trigger`.
+- Includes the base class `AbstractStackit` (service account key JSON passed in memory to the STACKIT Java SDK, `projectId`, `region`, 30s client timeouts, and 403 translated to a service-account permission error).
+- Built against Kestra 1.3.39 and Java 21.
 
 ## Why
 
-- What user problem does this solve? Teams need a concrete starting point for building and validating new Kestra plugins without recreating the same project scaffolding from scratch.
-- Why would a team adopt this plugin in a workflow? It gives plugin authors a ready-made reference repo they can adapt alongside their own build, test, and publishing workflow.
-- What operational/business outcome does it enable? It shortens plugin delivery time, reduces setup mistakes, and makes internal or partner plugin development more repeatable.
+- What user problem does this solve? Teams need to create and manage STACKIT servers, volumes, and networks from a workflow without hand-written SDK client and authentication code.
+- Why would a team adopt this plugin in a workflow? It shares one connection across IaaS tasks and calls the official STACKIT Java SDK for servers, volumes, and networks.
+- What operational/business outcome does it enable? Server, volume, and network changes run as declarative Kestra flows.
 
 ## How
 
@@ -17,7 +18,14 @@
 
 Single-module plugin. Source packages under `io.kestra.plugin`:
 
-- `stackit`
+- `stackit.auth` (`AbstractStackit`)
+- `stackit.iaas.server` (`Create`, `Get`, `List`, `Start`, `Stop`, `Delete`)
+- `stackit.iaas.volume` (`Create`, `List`, `Delete`)
+- `stackit.iaas.network` (`Create`, `List`, `Delete`)
+
+`server.Create` uses `machineType` (sample `t2i.1`) and a boot volume from `imageId` (default 32 GiB). `availabilityZone` is optional.
+
+Examples use the secrets `STACKIT_SERVICE_ACCOUNT_KEY`, `STACKIT_PROJECT_ID`, and `STACKIT_IMAGE_ID`.
 
 Infrastructure dependencies (Docker Compose services):
 
@@ -25,7 +33,10 @@ Infrastructure dependencies (Docker Compose services):
 
 ### Key Plugin Classes
 
-- `io.kestra.plugin.stackit.Example`
+- `io.kestra.plugin.stackit.auth.AbstractStackit`
+- `io.kestra.plugin.stackit.iaas.server.Create`, `Get`, `List`, `Start`, `Stop`, `Delete`
+- `io.kestra.plugin.stackit.iaas.volume.Create`, `List`, `Delete`
+- `io.kestra.plugin.stackit.iaas.network.Create`, `List`, `Delete`
 
 ### Project Structure
 
