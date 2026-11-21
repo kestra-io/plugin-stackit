@@ -9,7 +9,29 @@ kestra:
       base-path: /tmp/unittest
   plugins:
     configurations:
-      - type: io.kestra.plugin.stackit
-        values:
+      - type: io.kestra.plugin.stackit.iaas.server.Create
+        values: &stackit-mock
           customEndpoint: http://localhost:18089
           tokenCustomUrl: http://localhost:18089/token
+      - type: io.kestra.plugin.stackit.iaas.server.Get
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.server.List
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.server.Start
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.server.Stop
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.server.Delete
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.volume.Create
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.volume.List
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.volume.Delete
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.network.Create
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.network.List
+        values: *stackit-mock
+      - type: io.kestra.plugin.stackit.iaas.network.Delete
+        values: *stackit-mock

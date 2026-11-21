@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @Schema(title = "Start a STACKIT server",
     description = "Starts a server in a STACKIT project and region."
 )
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Start a server", full = true, code = """
+@Plugin(examples = @Example(title = "Start a server", full = true, code = """
     id: stackit_start_server
     namespace: company.team
 
@@ -36,8 +36,8 @@ public class Start extends AbstractStackitServerById implements RunnableTask<Sta
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String id = runServerOperation(runContext, (api, project, stackitRegion, serverId) ->
-            api.startServer(project, stackitRegion, serverId));
+        var id = runServerOperation(runContext, (api, project, rRegion, server) ->
+            api.startServer(project, rRegion, server));
         return Output.builder().serverId(id).build();
     }
 

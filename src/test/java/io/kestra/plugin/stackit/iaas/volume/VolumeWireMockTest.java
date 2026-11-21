@@ -7,6 +7,7 @@ import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.stackit.StackitTestFixtures;
 import io.kestra.plugin.stackit.StackitWireMock;
+import io.kestra.plugin.stackit.iaas.StackitListOutput;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +61,8 @@ class VolumeWireMockTest {
             .build();
 
         assertThat(((Create.Output) StackitWireMock.run(runContextFactory, wireMock, create)).getVolumeId(), is(ID));
-        assertThat(((List.Output) StackitWireMock.run(runContextFactory, wireMock, list)).getNames(), hasItem("kestra-data"));
+        var listOutput = (StackitListOutput.ListOutput) StackitWireMock.run(runContextFactory, wireMock, list);
+        assertThat(listOutput.getRows().stream().map(row -> row.get("name")).toList(), hasItem("kestra-data"));
         assertThat(((Delete.Output) StackitWireMock.run(runContextFactory, wireMock, delete)).getVolumeId(), is(ID));
     }
 }

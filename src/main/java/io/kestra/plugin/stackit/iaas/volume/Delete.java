@@ -24,8 +24,11 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "Delete a STACKIT volume", description = "Deletes a volume. force matches the SDK deleteVolume force flag.")
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Delete a volume", full = true, code = """
+@Schema(
+    title = "Delete a STACKIT volume",
+    description = "Deletes a volume. force matches the SDK deleteVolume force flag."
+)
+@Plugin(examples = @Example(title = "Delete a volume", full = true, code = """
     id: stackit_delete_volume
     namespace: company.team
 
@@ -45,21 +48,25 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
 
     @Schema(title = "Force", description = "SDK deleteVolume force flag. Defaults to false.")
     @PluginProperty(group = "advanced")
-    private Property<Boolean> force;
+    @Builder.Default
+    private Property<Boolean> force = Property.ofValue(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        UUID id = UUID.fromString(runContext.render(volumeId).as(String.class).orElseThrow());
-        Boolean renderedForce = optionalBoolean(runContext, force);
-        var project = projectId(runContext);
-        String stackitRegion = region(runContext);
+        var rVolumeId = UUID.fromString(runContext.render(volumeId).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("volumeId is required")));
+        var rForce = runContext.render(force).as(Boolean.class).orElse(false);
+        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rRegion = runContext.render(getRegion()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
             call(() -> {
-                client.api().deleteVolume(project, stackitRegion, id, renderedForce != null && renderedForce);
+                client.api().deleteVolume(rProjectId, rRegion, rVolumeId, rForce);
                 return null;
             });
         }
-        return Output.builder().volumeId(id.toString()).build();
+        return Output.builder().volumeId(rVolumeId.toString()).build();
     }
 
     @Builder

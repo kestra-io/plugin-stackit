@@ -7,6 +7,7 @@ import io.kestra.core.runners.RunContextFactory;
 import io.kestra.core.utils.IdUtils;
 import io.kestra.plugin.stackit.StackitTestFixtures;
 import io.kestra.plugin.stackit.StackitWireMock;
+import io.kestra.plugin.stackit.iaas.StackitListOutput;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +70,8 @@ class ServerWireMockTest {
             .build();
 
         assertThat(((Get.Output) StackitWireMock.run(runContextFactory, wireMock, get)).getStatus(), is("ACTIVE"));
-        assertThat(((List.Output) StackitWireMock.run(runContextFactory, wireMock, list)).getIds(), hasItem(ID));
+        var listOutput = (StackitListOutput.ListOutput) StackitWireMock.run(runContextFactory, wireMock, list);
+        assertThat(listOutput.getRows().stream().map(row -> row.get("id")).toList(), hasItem(ID));
         assertThat(((Start.Output) StackitWireMock.run(runContextFactory, wireMock, start)).getServerId(), is(ID));
         assertThat(((Stop.Output) StackitWireMock.run(runContextFactory, wireMock, stop)).getServerId(), is(ID));
         assertThat(((Delete.Output) StackitWireMock.run(runContextFactory, wireMock, delete)).getServerId(), is(ID));

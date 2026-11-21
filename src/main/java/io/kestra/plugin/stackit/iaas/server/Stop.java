@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @Schema(title = "Stop a STACKIT server",
     description = "Stops a server in a STACKIT project and region."
 )
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Stop a server", full = true, code = """
+@Plugin(examples = @Example(title = "Stop a server", full = true, code = """
     id: stackit_stop_server
     namespace: company.team
 
@@ -36,8 +36,8 @@ public class Stop extends AbstractStackitServerById implements RunnableTask<Stop
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String id = runServerOperation(runContext, (api, project, stackitRegion, serverId) ->
-            api.stopServer(project, stackitRegion, serverId));
+        var id = runServerOperation(runContext, (api, project, rRegion, server) ->
+            api.stopServer(project, rRegion, server));
         return Output.builder().serverId(id).build();
     }
 

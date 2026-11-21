@@ -10,6 +10,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -24,8 +26,11 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "Create a STACKIT volume", description = "Creates a data volume. size is GiB, matching CreateVolumePayload.")
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Create a volume", full = true, code = """
+@Schema(
+    title = "Create a STACKIT volume",
+    description = "Creates a data volume. size is GiB, matching CreateVolumePayload."
+)
+@Plugin(examples = @Example(title = "Create a volume", full = true, code = """
     id: stackit_create_volume
     namespace: company.team
 
@@ -45,13 +50,20 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @NotNull
     private Property<@NotBlank String> name;
 
-    @Schema(title = "Size in GiB", description = "SDK field CreateVolumePayload.size.")
+    @Schema(
+        title = "Size in GiB",
+        description = "SDK field CreateVolumePayload.size."
+    )
     @PluginProperty(group = "main")
     @NotNull
-    private Property<Integer> sizeGiB;
+    private Property<@Min(1) @Max(16384) Integer> sizeGiB;
 
-    @Schema(title = "Availability zone", description = "SDK field availabilityZone, for example eu01-1.")
+    @Schema(
+        title = "Availability zone",
+        description = "SDK field availabilityZone, for example eu01-1."
+    )
     @PluginProperty(group = "main")
+    @NotNull
     private Property<String> availabilityZone;
 
     @Schema(title = "Performance class")
@@ -60,21 +72,23 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String volumeName = requiredString(runContext, name);
-        Integer size = runContext.render(sizeGiB).as(Integer.class).orElseThrow();
-        CreateVolumePayload payload = new CreateVolumePayload().name(volumeName).size(size.longValue());
-        String zone = optional(runContext, availabilityZone);
-        String performance = optional(runContext, performanceClass);
-        if (zone != null) {
-            payload.availabilityZone(zone);
+        var rName = runContext.render(name).as(String.class).orElseThrow(() -> new IllegalArgumentException("name is required"));
+        var rSize = runContext.render(sizeGiB).as(Integer.class).orElseThrow(() -> new IllegalArgumentException("sizeGiB is required"));
+        var payload = new CreateVolumePayload().name(rName).size(rSize.longValue());
+        var rZone = runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rPerformance = performanceClass == null ? null : runContext.render(performanceClass).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        if (rZone != null) {
+            payload.availabilityZone(rZone);
         }
-        if (performance != null) {
-            payload.performanceClass(performance);
+        if (rPerformance != null) {
+            payload.performanceClass(rPerformance);
         }
-        var project = projectId(runContext);
-        String stackitRegion = region(runContext);
+        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rRegion = runContext.render(getRegion()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
-            Volume volume = call(() -> client.api().createVolume(project, stackitRegion, payload));
+            var volume = call(() -> client.api().createVolume(rProjectId, rRegion, payload));
             return Output.builder()
                 .volumeId(volume.getId() == null ? null : volume.getId().toString())
                 .name(volume.getName())

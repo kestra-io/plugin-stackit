@@ -4,23 +4,24 @@ The STACKIT plugin calls the official Java SDK from Kestra flows.
 
 Every task takes `serviceAccountKey`, `projectId`, and `region`.
 
-`serviceAccountKey` is the service account key JSON. Pass it with a Kestra secret. Kestra reads that secret and the task gives the JSON to the SDK in memory. On a default Kestra install the secret is the environment variable `STACKIT_SERVICE_ACCOUNT_KEY` on the Docker Compose `app` service. Do not paste the JSON into the flow. Create the key in the STACKIT portal and use the downloaded JSON; it must include `credentials.privateKey`. The task fails if the private key is missing, so it does not fall back to worker files or environment variables.
+`serviceAccountKey` is the service account key JSON. Pass it with a Kestra secret, for example `{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}`. See the [secrets documentation](https://kestra.io/docs/concepts/secret) for how secrets are defined and resolved on your deployment. The task gives the rendered JSON to the SDK in memory. Create the key in the STACKIT portal and use the downloaded JSON; it must include `credentials.privateKey`. The task fails if the private key is missing.
 
-## Worker plugin configuration
+## Worker settings
 
-Flows do not set API endpoints. On the Kestra worker you can optionally point all STACKIT tasks at custom hosts (for example a private API or a local mock) with `kestra.plugins.configurations`:
+Flows do not set API endpoints. On the Kestra worker you can optionally point STACKIT tasks at custom hosts (for example a private API) with `kestra.plugins.configurations`. Set `type` to each task's fully qualified class name and repeat the same `customEndpoint` and `tokenCustomUrl` values (YAML anchors help). Omit this for the public STACKIT endpoints.
 
 ```yaml
 kestra:
   plugins:
     configurations:
-      - type: io.kestra.plugin.stackit
-        values:
+      - type: io.kestra.plugin.stackit.iaas.server.Create
+        values: &stackit-endpoints
           customEndpoint: https://iaas.api.example.test
           tokenCustomUrl: https://iaas.api.example.test/token
+      - type: io.kestra.plugin.stackit.iaas.server.List
+        values: *stackit-endpoints
+      # repeat for other STACKIT task types you use
 ```
-
-Each task is registered with the alias `io.kestra.plugin.stackit`, so one block applies to every task in this plugin. Omit this section for the public STACKIT endpoints.
 
 ## Tasks
 

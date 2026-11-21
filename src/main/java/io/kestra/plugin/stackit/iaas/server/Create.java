@@ -14,6 +14,8 @@ import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -34,34 +36,31 @@ import java.util.UUID;
     title = "Create a STACKIT server",
     description = "Creates a server in a STACKIT project and region."
 )
-@Plugin(
-    aliases = "io.kestra.plugin.stackit",
-    examples = {
-        @Example(
-            title = "Create a server and log its ID",
-            full = true,
-            code = """
-                id: stackit_create_server
-                namespace: company.team
+@Plugin(examples = {
+    @Example(
+        title = "Create a server and log its ID",
+        full = true,
+        code = """
+            id: stackit_create_server
+            namespace: company.team
 
-                tasks:
-                  - id: create_server
-                    type: io.kestra.plugin.stackit.iaas.server.Create
-                    serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
-                    projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
-                    region: eu01
-                    name: kestra-demo
-                    machineType: t2i.1
-                    imageId: 11111111-1111-1111-1111-111111111111
-                    bootVolumeSizeGiB: 32
+            tasks:
+              - id: create_server
+                type: io.kestra.plugin.stackit.iaas.server.Create
+                serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
+                projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
+                region: eu01
+                name: kestra-demo
+                machineType: t2i.1
+                imageId: 11111111-1111-1111-1111-111111111111
+                bootVolumeSizeGiB: 32
 
-                  - id: log_server
-                    type: io.kestra.plugin.core.log.Log
-                    message: "Server {{ outputs.create_server.serverId }} created"
-                """
-        )
-    }
-)
+              - id: log_server
+                type: io.kestra.plugin.core.log.Log
+                message: "Server {{ outputs.create_server.serverId }} created"
+            """
+    )
+})
 public class Create extends AbstractStackit implements RunnableTask<Create.Output> {
     @Schema(
         title = "Server name",
@@ -73,7 +72,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Machine type",
-        description = "Required machine type name that exists in the region. The SDK sample name is t2i.1."
+        description = """
+            Required machine type name that exists in the region. The SDK sample name is t2i.1.
+            """
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -88,7 +89,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Image ID",
-        description = "Operating system image UUID used as the boot volume source. List images in the project to get a valid id."
+        description = "Operating system image UUID used as the boot volume source."
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -96,10 +97,11 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Boot volume size (GiB)",
-        description = "Boot disk size in GiB. Defaults to 32, the size used by the STACKIT Java SDK example."
+        description = "Boot disk size in GiB. Defaults to 32, as in the STACKIT Java SDK example."
     )
     @PluginProperty(group = "advanced")
-    private Property<Integer> bootVolumeSizeGiB;
+    @Builder.Default
+    private Property<@Min(1) @Max(16384) Integer> bootVolumeSizeGiB = Property.ofValue(32);
 
     @Schema(
         title = "Keypair name",
@@ -117,43 +119,42 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String serverName = requiredString(runContext, name);
-        String renderedMachineType = requiredString(runContext, machineType);
-        String renderedZone = optional(runContext, availabilityZone);
-        String renderedImageId = requiredString(runContext, imageId);
-        Integer renderedSize = optionalInteger(runContext, bootVolumeSizeGiB);
-        String renderedKeypair = optional(runContext, keypairName);
-        String renderedNetworkId = optional(runContext, networkId);
-        long bootSize = renderedSize == null ? 32L : renderedSize.longValue();
+        var rName = runContext.render(name).as(String.class).orElseThrow(() -> new IllegalArgumentException("name is required"));
+        var rMachineType = runContext.render(machineType).as(String.class).orElseThrow(() -> new IllegalArgumentException("machineType is required"));
+        var rZone = availabilityZone == null ? null : runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rImageId = runContext.render(imageId).as(String.class).orElseThrow(() -> new IllegalArgumentException("imageId is required"));
+        var rBootSize = runContext.render(bootVolumeSizeGiB).as(Integer.class).orElse(32);
+        var rKeypair = keypairName == null ? null : runContext.render(keypairName).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rNetworkId = networkId == null ? null : runContext.render(networkId).as(String.class).filter(value -> !value.isBlank()).orElse(null);
 
-        runContext.logger().info("Creating STACKIT server '{}'.", serverName);
+        runContext.logger().info("Creating STACKIT server '{}'.", rName);
 
-        CreateServerPayload payload = new CreateServerPayload()
-            .name(serverName)
-            .machineType(renderedMachineType)
+        var payload = new CreateServerPayload()
+            .name(rName)
+            .machineType(rMachineType)
             .bootVolume(new BootVolume()
                 .deleteOnTermination(true)
-                .size(bootSize)
+                .size(rBootSize.longValue())
                 .source(new BootVolumeSource()
-                    .id(UUID.fromString(renderedImageId))
+                    .id(UUID.fromString(rImageId))
                     .type("image")));
-        if (renderedZone != null) {
-            payload.availabilityZone(renderedZone);
+        if (rZone != null) {
+            payload.availabilityZone(rZone);
         }
-        if (renderedKeypair != null) {
-            payload.keypairName(renderedKeypair);
+        if (rKeypair != null) {
+            payload.keypairName(rKeypair);
         }
-        if (renderedNetworkId != null) {
+        if (rNetworkId != null) {
             payload.networking(new CreateServerPayloadAllOfNetworking(
-                new CreateServerNetworking().networkId(UUID.fromString(renderedNetworkId))
+                new CreateServerNetworking().networkId(UUID.fromString(rNetworkId))
             ));
         }
 
-        UUID stackitProjectId = projectId(runContext);
-        String stackitRegion = region(runContext);
+        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class).orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rRegion = runContext.render(getRegion()).as(String.class).orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
-            Server server = call(() -> client.api().createServer(stackitProjectId, stackitRegion, payload));
-            String serverId = server.getId() == null ? null : server.getId().toString();
+            var server = call(() -> client.api().createServer(rProjectId, rRegion, payload));
+            var serverId = server.getId() == null ? null : server.getId().toString();
             return Output.builder()
                 .serverId(serverId)
                 .name(server.getName())
@@ -167,34 +168,15 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Builder
     @Getter
     public static class Output implements io.kestra.core.models.tasks.Output {
-        @Schema(
-            title = "Server ID",
-            description = "ID of the created server."
-        )
+        @Schema(title = "Server ID")
         private final String serverId;
-
-        @Schema(
-            title = "Server name",
-            description = "Name returned by STACKIT."
-        )
+        @Schema(title = "Server name")
         private final String name;
-
-        @Schema(
-            title = "Status",
-            description = "Server status returned by STACKIT."
-        )
+        @Schema(title = "Status")
         private final String status;
-
-        @Schema(
-            title = "Machine type",
-            description = "Machine type returned by STACKIT."
-        )
+        @Schema(title = "Machine type")
         private final String machineType;
-
-        @Schema(
-            title = "Availability zone",
-            description = "Availability zone returned by STACKIT."
-        )
+        @Schema(title = "Availability zone")
         private final String availabilityZone;
     }
 }

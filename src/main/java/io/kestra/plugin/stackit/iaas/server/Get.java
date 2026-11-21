@@ -19,7 +19,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Get a STACKIT server", description = "Fetches one server by id.")
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Get a server", full = true, code = """
+@Plugin(examples = @Example(title = "Get a server", full = true, code = """
     id: stackit_get_server
     namespace: company.team
 
@@ -35,11 +35,14 @@ public class Get extends AbstractStackitServerById implements RunnableTask<Get.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        var project = projectId(runContext);
-        String stackitRegion = region(runContext);
-        var id = serverUuid(runContext);
+        var rServerId = java.util.UUID.fromString(runContext.render(getServerId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("serverId is required")));
+        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rRegion = runContext.render(getRegion()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
-            Server server = call(() -> client.api().getServer(project, stackitRegion, id, false));
+            var server = call(() -> client.api().getServer(rProjectId, rRegion, rServerId, false));
             return Output.builder()
                 .serverId(server.getId() == null ? null : server.getId().toString())
                 .name(server.getName())

@@ -20,7 +20,7 @@ import lombok.experimental.SuperBuilder;
 @Schema(title = "Delete a STACKIT server",
     description = "Deletes a server in a STACKIT project and region."
 )
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Delete a server", full = true, code = """
+@Plugin(examples = @Example(title = "Delete a server", full = true, code = """
     id: stackit_delete_server
     namespace: company.team
 
@@ -36,8 +36,8 @@ public class Delete extends AbstractStackitServerById implements RunnableTask<De
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        String id = runServerOperation(runContext, (api, project, stackitRegion, serverId) ->
-            api.deleteServer(project, stackitRegion, serverId));
+        var id = runServerOperation(runContext, (api, project, rRegion, server) ->
+            api.deleteServer(project, rRegion, server));
         return Output.builder().serverId(id).build();
     }
 

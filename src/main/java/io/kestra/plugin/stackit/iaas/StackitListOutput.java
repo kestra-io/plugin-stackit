@@ -1,12 +1,16 @@
 package io.kestra.plugin.stackit.iaas;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.kestra.core.models.tasks.Output;
 import io.kestra.core.models.tasks.common.FetchType;
 import io.kestra.core.runners.RunContext;
+import io.kestra.core.serializers.FileSerde;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -14,63 +18,60 @@ import java.util.Map;
 
 public final class StackitListOutput {
 
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     private StackitListOutput() {
     }
 
     @Builder
     @Getter
-    public static class Result {
-        private final Integer count;
-        private final List<String> ids;
-        private final List<String> names;
-        private final Map<String, Object> row;
+    public static class ListOutput implements Output {
+        @Schema(title = "Rows", description = "Set when fetchType is FETCH.")
         private final List<Map<String, Object>> rows;
+        @Schema(title = "First row", description = "Set when fetchType is FETCH_ONE.")
+        private final Map<String, Object> row;
+        @Schema(title = "Storage URI", description = "Set when fetchType is STORE.")
         private final URI uri;
+        @Schema(title = "Size", description = "Number of items listed.")
         private final Long size;
     }
 
-    public static Result build(
+    public static ListOutput build(
         RunContext runContext,
         FetchType fetchType,
-        java.util.List<String> ids,
-        java.util.List<String> names
+        List<String> ids,
+        List<String> names
     ) throws Exception {
-        int count = ids.size();
-        java.util.List<Map<String, Object>> rowMaps = toRows(ids, names);
+        long count = ids.size();
+        var rowMaps = toRows(ids, names);
 
         return switch (fetchType) {
-            case FETCH -> Result.builder()
-                .count(count)
-                .ids(ids)
-                .names(names)
+            case FETCH -> ListOutput.builder()
                 .rows(rowMaps)
-                .size((long) count)
+                .size(count)
                 .build();
-            case FETCH_ONE -> Result.builder()
-                .count(count)
+            case FETCH_ONE -> ListOutput.builder()
                 .row(rowMaps.isEmpty() ? null : rowMaps.getFirst())
-                .size((long) count)
+                .size(count)
                 .build();
-            case NONE -> Result.builder()
-                .count(count)
-                .size((long) count)
+            case NONE -> ListOutput.builder()
+                .size(count)
                 .build();
             case STORE -> {
-                File file = runContext.workingDir().createTempFile(".json").toFile();
-                JSON.writeValue(file, rowMaps);
+                File file = runContext.workingDir().createTempFile(".ion").toFile();
+                try (var output = new BufferedOutputStream(new FileOutputStream(file), FileSerde.BUFFER_SIZE)) {
+                    for (Map<String, Object> row : rowMaps) {
+                        FileSerde.write(output, row);
+                    }
+                }
                 URI uri = runContext.storage().putFile(file);
-                yield Result.builder()
-                    .count(count)
+                yield ListOutput.builder()
                     .uri(uri)
-                    .size((long) count)
+                    .size(count)
                     .build();
             }
         };
     }
 
-    private static java.util.List<Map<String, Object>> toRows(java.util.List<String> ids, java.util.List<String> names) {
+    private static List<Map<String, Object>> toRows(List<String> ids, List<String> names) {
         return java.util.stream.IntStream.range(0, ids.size())
             .mapToObj(index -> {
                 Map<String, Object> row = new HashMap<>();

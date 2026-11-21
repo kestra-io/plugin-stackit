@@ -22,6 +22,7 @@ import lombok.experimental.SuperBuilder;
 import okhttp3.OkHttpClient;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -30,8 +31,7 @@ import java.util.UUID;
  * <p>The service account key JSON is a task property. Kestra renders {@code serviceAccountKey} and this class
  * passes that string to {@link CoreConfiguration#serviceAccountKey(String)}, which keeps the key in memory.
  *
- * <p>Optional API and token URLs can be set on the worker via plugin configuration
- * ({@link StackitPluginConfiguration#TYPE_ALIAS}), not as flow task properties.
+ * <p>Optional API and token URLs are worker-level plugin configuration (per task type), not flow task properties.
  */
 @SuperBuilder
 @ToString
@@ -45,54 +45,53 @@ public abstract class AbstractStackit extends Task {
 
     @Schema(
         title = "Service account key",
-        description = "Service account key JSON from the STACKIT portal, including credentials.privateKey. "
-            + "Pass it with a Kestra secret, for example {{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}."
+        description = """
+            Service account key JSON from the STACKIT portal, including credentials.privateKey.
+            Pass it with a Kestra secret, for example {{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}.
+            """
     )
     @PluginProperty(secret = true, group = "connection")
     @ToString.Exclude
     @NotNull
     private Property<@NotBlank String> serviceAccountKey;
 
-    @Schema(title = "Project ID", description = "STACKIT project UUID.")
+    @Schema(
+        title = "Project ID",
+        description = "STACKIT project UUID."
+    )
     @PluginProperty(group = "connection")
     @NotNull
     private Property<@NotBlank String> projectId;
 
-    @Schema(title = "Region", description = "STACKIT region, for example eu01.")
+    @Schema(
+        title = "Region",
+        description = "STACKIT region, for example eu01."
+    )
     @PluginProperty(group = "connection")
     @NotNull
     private Property<@NotBlank String> region;
 
     protected IaasClient iaasClient(RunContext runContext) throws IOException, IllegalVariableEvaluationException {
-        String serviceAccountKeyJson = runContext.render(this.serviceAccountKey).as(String.class).orElseThrow();
+        var serviceAccountKeyJson = runContext.render(this.serviceAccountKey).as(String.class)
+            .orElseThrow(() -> new IllegalVariableEvaluationException("serviceAccountKey is required"));
         requireEmbeddedPrivateKey(serviceAccountKeyJson);
-        CoreConfiguration configuration = new CoreConfiguration()
+        var configuration = new CoreConfiguration()
             .serviceAccountKey(serviceAccountKeyJson);
-        runContext.pluginConfiguration(StackitPluginConfiguration.CUSTOM_ENDPOINT)
-            .map(String.class::cast)
-            .filter(value -> !value.isBlank())
+        workerSetting(runContext, StackitPluginConfiguration.CUSTOM_ENDPOINT)
             .ifPresent(configuration::customEndpoint);
-        runContext.pluginConfiguration(StackitPluginConfiguration.TOKEN_CUSTOM_URL)
-            .map(String.class::cast)
-            .filter(value -> !value.isBlank())
+        workerSetting(runContext, StackitPluginConfiguration.TOKEN_CUSTOM_URL)
             .ifPresent(configuration::tokenCustomUrl);
-        IaasApi api = new IaasApi(configuration);
+        var api = new IaasApi(configuration);
         api.getApiClient().setConnectTimeout(DEFAULT_TIMEOUT_MILLIS);
         api.getApiClient().setReadTimeout(DEFAULT_TIMEOUT_MILLIS);
         api.getApiClient().setWriteTimeout(DEFAULT_TIMEOUT_MILLIS);
         return new IaasClient(api);
     }
 
-    protected UUID projectId(RunContext runContext) throws IllegalVariableEvaluationException {
-        return UUID.fromString(runContext.render(this.projectId).as(String.class).orElseThrow());
-    }
-
-    protected String region(RunContext runContext) throws IllegalVariableEvaluationException {
-        return runContext.render(this.region).as(String.class).orElseThrow();
-    }
-
-    protected String requiredString(RunContext runContext, Property<String> property) throws IllegalVariableEvaluationException {
-        return runContext.render(property).as(String.class).orElseThrow();
+    private static Optional<String> workerSetting(RunContext runContext, String configurationKey) {
+        return runContext.pluginConfiguration(configurationKey)
+            .map(Object::toString)
+            .filter(value -> !value.isBlank());
     }
 
     static void requireEmbeddedPrivateKey(String serviceAccountKeyJson) {
@@ -107,27 +106,6 @@ public abstract class AbstractStackit extends Task {
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("serviceAccountKey must be valid JSON.", exception);
         }
-    }
-
-    protected String optional(RunContext runContext, Property<String> property) throws IllegalVariableEvaluationException {
-        if (property == null) {
-            return null;
-        }
-        return runContext.render(property).as(String.class).filter(value -> !value.isBlank()).orElse(null);
-    }
-
-    protected Integer optionalInteger(RunContext runContext, Property<Integer> property) throws IllegalVariableEvaluationException {
-        if (property == null) {
-            return null;
-        }
-        return runContext.render(property).as(Integer.class).orElse(null);
-    }
-
-    protected Boolean optionalBoolean(RunContext runContext, Property<Boolean> property) throws IllegalVariableEvaluationException {
-        if (property == null) {
-            return null;
-        }
-        return runContext.render(property).as(Boolean.class).orElse(null);
     }
 
     protected <T> T call(StackitCall<T> action) throws Exception {
@@ -146,7 +124,7 @@ public abstract class AbstractStackit extends Task {
             );
         }
         return new StackitClientException(
-            "STACKIT request failed with status " + exception.getCode() + ": " + exception.getMessage(),
+            "STACKIT request failed with status %d: %s".formatted(exception.getCode(), exception.getMessage()),
             exception
         );
     }

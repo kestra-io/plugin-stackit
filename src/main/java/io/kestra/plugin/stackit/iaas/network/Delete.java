@@ -27,7 +27,7 @@ import java.util.UUID;
 @Schema(title = "Delete a STACKIT network",
     description = "Deletes a network in a STACKIT project and region."
 )
-@Plugin(aliases = "io.kestra.plugin.stackit", examples = @Example(title = "Delete a network", full = true, code = """
+@Plugin(examples = @Example(title = "Delete a network", full = true, code = """
     id: stackit_delete_network
     namespace: company.team
 
@@ -47,16 +47,19 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        UUID id = UUID.fromString(runContext.render(networkId).as(String.class).orElseThrow());
-        var project = projectId(runContext);
-        String stackitRegion = region(runContext);
+        var rNetworkId = UUID.fromString(runContext.render(networkId).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("networkId is required")));
+        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rRegion = runContext.render(getRegion()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
             call(() -> {
-                client.api().deleteNetwork(project, stackitRegion, id);
+                client.api().deleteNetwork(rProjectId, rRegion, rNetworkId);
                 return null;
             });
         }
-        return Output.builder().networkId(id.toString()).build();
+        return Output.builder().networkId(rNetworkId.toString()).build();
     }
 
     @Builder
