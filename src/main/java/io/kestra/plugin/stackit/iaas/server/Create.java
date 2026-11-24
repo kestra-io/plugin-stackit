@@ -5,7 +5,6 @@ import cloud.stackit.sdk.iaas.v2api.model.BootVolumeSource;
 import cloud.stackit.sdk.iaas.v2api.model.CreateServerNetworking;
 import cloud.stackit.sdk.iaas.v2api.model.CreateServerPayload;
 import cloud.stackit.sdk.iaas.v2api.model.CreateServerPayloadAllOfNetworking;
-import cloud.stackit.sdk.iaas.v2api.model.Server;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
@@ -24,8 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import java.util.UUID;
 
 @SuperBuilder
 @ToString
@@ -112,7 +109,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Network ID",
-        description = "Optional network UUID to attach. Leave empty to use the project default network."
+        description = """
+            Optional network UUID to attach. Leave empty to use the project default network.
+            """
     )
     @PluginProperty(group = "advanced")
     private Property<String> networkId;
@@ -121,11 +120,11 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     public Output run(RunContext runContext) throws Exception {
         var rName = runContext.render(name).as(String.class).orElseThrow(() -> new IllegalArgumentException("name is required"));
         var rMachineType = runContext.render(machineType).as(String.class).orElseThrow(() -> new IllegalArgumentException("machineType is required"));
-        var rZone = availabilityZone == null ? null : runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rZone = runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
         var rImageId = runContext.render(imageId).as(String.class).orElseThrow(() -> new IllegalArgumentException("imageId is required"));
         var rBootSize = runContext.render(bootVolumeSizeGiB).as(Integer.class).orElse(32);
-        var rKeypair = keypairName == null ? null : runContext.render(keypairName).as(String.class).filter(value -> !value.isBlank()).orElse(null);
-        var rNetworkId = networkId == null ? null : runContext.render(networkId).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rKeypair = runContext.render(keypairName).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rNetworkId = runContext.render(networkId).as(String.class).filter(value -> !value.isBlank()).orElse(null);
 
         runContext.logger().info("Creating STACKIT server '{}'.", rName);
 
@@ -136,7 +135,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
                 .deleteOnTermination(true)
                 .size(rBootSize.longValue())
                 .source(new BootVolumeSource()
-                    .id(UUID.fromString(rImageId))
+                    .id(uuid("imageId", rImageId))
                     .type("image")));
         if (rZone != null) {
             payload.availabilityZone(rZone);
@@ -146,11 +145,12 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         }
         if (rNetworkId != null) {
             payload.networking(new CreateServerPayloadAllOfNetworking(
-                new CreateServerNetworking().networkId(UUID.fromString(rNetworkId))
+                new CreateServerNetworking().networkId(uuid("networkId", rNetworkId))
             ));
         }
 
-        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class).orElseThrow(() -> new IllegalArgumentException("projectId is required")));
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class).orElseThrow(() -> new IllegalArgumentException("region is required"));
         try (IaasClient client = iaasClient(runContext)) {
             var server = call(() -> client.api().createServer(rProjectId, rRegion, payload));

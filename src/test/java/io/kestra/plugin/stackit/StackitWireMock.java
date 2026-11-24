@@ -3,7 +3,8 @@ package io.kestra.plugin.stackit;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.kestra.core.runners.RunContext;
+import io.kestra.core.models.tasks.Output;
+import io.kestra.core.models.tasks.RunnableTask;
 import io.kestra.core.runners.RunContextFactory;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 
@@ -39,17 +40,13 @@ public final class StackitWireMock {
         wireMock.stubFor(WireMock.request(method, urlPathMatching(path)).willReturn(aResponse().withStatus(202)));
     }
 
-    public static Object run(RunContextFactory runContextFactory, WireMockServer wireMock, AbstractStackit task) throws Exception {
-        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
-        try {
-            return task.getClass().getMethod("run", RunContext.class)
-                .invoke(task, runContext);
-        } catch (java.lang.reflect.InvocationTargetException exception) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof Exception nested) {
-                throw nested;
-            }
-            throw exception;
-        }
+    @SuppressWarnings("unused")
+    public static <O extends Output, T extends AbstractStackit & RunnableTask<O>> O run(
+        RunContextFactory runContextFactory,
+        WireMockServer wireMock,
+        T task
+    ) throws Exception {
+        var runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
+        return task.run(runContext);
     }
 }

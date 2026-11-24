@@ -1,7 +1,6 @@
 package io.kestra.plugin.stackit.iaas.volume;
 
 import cloud.stackit.sdk.iaas.v2api.model.CreateVolumePayload;
-import cloud.stackit.sdk.iaas.v2api.model.Volume;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
@@ -28,7 +27,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Schema(
     title = "Create a STACKIT volume",
-    description = "Creates a data volume. size is GiB, matching CreateVolumePayload."
+    description = "Creates a data volume in GiB."
 )
 @Plugin(examples = @Example(title = "Create a volume", full = true, code = """
     id: stackit_create_volume
@@ -52,7 +51,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Size in GiB",
-        description = "SDK field CreateVolumePayload.size."
+        description = "Volume capacity in gibibytes (GiB)."
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -60,7 +59,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Availability zone",
-        description = "SDK field availabilityZone, for example eu01-1."
+        description = "Availability zone, for example eu01-1."
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -76,14 +75,14 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         var rSize = runContext.render(sizeGiB).as(Integer.class).orElseThrow(() -> new IllegalArgumentException("sizeGiB is required"));
         var payload = new CreateVolumePayload().name(rName).size(rSize.longValue());
         var rZone = runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
-        var rPerformance = performanceClass == null ? null : runContext.render(performanceClass).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rPerformance = runContext.render(performanceClass).as(String.class).filter(value -> !value.isBlank()).orElse(null);
         if (rZone != null) {
             payload.availabilityZone(rZone);
         }
         if (rPerformance != null) {
             payload.performanceClass(rPerformance);
         }
-        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));

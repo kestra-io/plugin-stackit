@@ -41,11 +41,11 @@ public class List extends AbstractStackitList implements RunnableTask<StackitLis
 
     @Override
     public StackitListOutput.ListOutput run(RunContext runContext) throws Exception {
-        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
-        var rLabelSelector = getLabelSelector() == null ? null : runContext.render(getLabelSelector()).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rLabelSelector = runContext.render(getLabelSelector()).as(String.class).filter(value -> !value.isBlank()).orElse(null);
         var rFetchType = runContext.render(getFetchType()).as(FetchType.class).orElse(FetchType.FETCH);
         try (IaasClient client = iaasClient(runContext)) {
             var response = call(() -> client.api().listVolumes(rProjectId, rRegion, rLabelSelector));

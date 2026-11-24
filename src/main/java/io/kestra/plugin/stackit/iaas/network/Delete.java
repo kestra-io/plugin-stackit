@@ -17,8 +17,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
-
 @SuperBuilder
 @ToString
 @EqualsAndHashCode(callSuper = true)
@@ -47,9 +45,9 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        var rNetworkId = UUID.fromString(runContext.render(networkId).as(String.class)
+        var rNetworkId = uuid("networkId", runContext.render(networkId).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("networkId is required")));
-        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));

@@ -35,10 +35,10 @@ public abstract class AbstractStackitServerById extends AbstractStackit {
         void execute(IaasApi api, UUID project, String region, UUID serverId) throws ApiException;
     }
 
-    protected String runServerOperation(RunContext runContext, ServerOperation operation) throws Exception {
-        var rServerId = UUID.fromString(runContext.render(getServerId()).as(String.class)
+    protected void runServerOperation(RunContext runContext, ServerOperation operation) throws Exception {
+        var rServerId = uuid("serverId", runContext.render(getServerId()).as(String.class)
             .orElseThrow(() -> new IllegalVariableEvaluationException("serverId is required")));
-        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalVariableEvaluationException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalVariableEvaluationException("region is required"));
@@ -48,6 +48,5 @@ public abstract class AbstractStackitServerById extends AbstractStackit {
                 return null;
             });
         }
-        return rServerId.toString();
     }
 }

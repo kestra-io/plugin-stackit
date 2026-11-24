@@ -17,8 +17,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
-
 @SuperBuilder
 @ToString
 @EqualsAndHashCode(callSuper = true)
@@ -26,7 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Schema(
     title = "Delete a STACKIT volume",
-    description = "Deletes a volume. force matches the SDK deleteVolume force flag."
+    description = "Deletes a volume in a project and region."
 )
 @Plugin(examples = @Example(title = "Delete a volume", full = true, code = """
     id: stackit_delete_volume
@@ -46,17 +44,17 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
     @NotNull
     private Property<@NotBlank String> volumeId;
 
-    @Schema(title = "Force", description = "SDK deleteVolume force flag. Defaults to false.")
+    @Schema(title = "Force", description = "Delete the volume even when it is still attached. Defaults to false.")
     @PluginProperty(group = "advanced")
     @Builder.Default
     private Property<Boolean> force = Property.ofValue(false);
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        var rVolumeId = UUID.fromString(runContext.render(volumeId).as(String.class)
+        var rVolumeId = uuid("volumeId", runContext.render(volumeId).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("volumeId is required")));
         var rForce = runContext.render(force).as(Boolean.class).orElse(false);
-        var rProjectId = UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kestra.core.exceptions.IllegalVariableEvaluationException;
+import io.kestra.core.serializers.JacksonMapper;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.Task;
@@ -19,8 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import okhttp3.OkHttpClient;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,7 +40,7 @@ import java.util.UUID;
 public abstract class AbstractStackit extends Task {
     public static final int DEFAULT_TIMEOUT_MILLIS = 30_000;
 
-    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final ObjectMapper JSON = JacksonMapper.ofJson();
 
     @Schema(
         title = "Service account key",
@@ -72,11 +71,11 @@ public abstract class AbstractStackit extends Task {
     private Property<@NotBlank String> region;
 
     protected IaasClient iaasClient(RunContext runContext) throws IOException, IllegalVariableEvaluationException {
-        var serviceAccountKeyJson = runContext.render(this.serviceAccountKey).as(String.class)
+        var rServiceAccountKey = runContext.render(this.serviceAccountKey).as(String.class)
             .orElseThrow(() -> new IllegalVariableEvaluationException("serviceAccountKey is required"));
-        requireEmbeddedPrivateKey(serviceAccountKeyJson);
+        requireEmbeddedPrivateKey(rServiceAccountKey);
         var configuration = new CoreConfiguration()
-            .serviceAccountKey(serviceAccountKeyJson);
+            .serviceAccountKey(rServiceAccountKey);
         workerSetting(runContext, StackitPluginConfiguration.CUSTOM_ENDPOINT)
             .ifPresent(configuration::customEndpoint);
         workerSetting(runContext, StackitPluginConfiguration.TOKEN_CUSTOM_URL)
@@ -99,12 +98,20 @@ public abstract class AbstractStackit extends Task {
             JsonNode privateKey = JSON.readTree(serviceAccountKeyJson).path("credentials").path("privateKey");
             if (!privateKey.isTextual() || privateKey.asText().isBlank()) {
                 throw new IllegalArgumentException(
-                    "serviceAccountKey JSON must include credentials.privateKey. "
-                        + "Create the service account key in the STACKIT portal so the downloaded JSON contains the private key."
+                    "%s must include credentials.privateKey. Create the service account key in the STACKIT portal so the downloaded JSON contains the private key."
+                        .formatted("serviceAccountKey JSON")
                 );
             }
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("serviceAccountKey must be valid JSON.", exception);
+        }
+    }
+
+    protected static UUID uuid(String label, String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("%s must be a valid UUID, got: %s".formatted(label, value), exception);
         }
     }
 
@@ -147,7 +154,7 @@ public abstract class AbstractStackit extends Task {
 
         @Override
         public void close() {
-            OkHttpClient httpClient = api.getApiClient().getHttpClient();
+            var httpClient = api.getApiClient().getHttpClient();
             httpClient.dispatcher().executorService().shutdown();
             httpClient.connectionPool().evictAll();
             if (httpClient.cache() != null) {

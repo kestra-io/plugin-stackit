@@ -1,6 +1,5 @@
 package io.kestra.plugin.stackit.iaas.server;
 
-import cloud.stackit.sdk.iaas.v2api.model.Server;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.tasks.RunnableTask;
@@ -35,9 +34,9 @@ public class Get extends AbstractStackitServerById implements RunnableTask<Get.O
 
     @Override
     public Output run(RunContext runContext) throws Exception {
-        var rServerId = java.util.UUID.fromString(runContext.render(getServerId()).as(String.class)
+        var rServerId = uuid("serverId", runContext.render(getServerId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("serverId is required")));
-        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));

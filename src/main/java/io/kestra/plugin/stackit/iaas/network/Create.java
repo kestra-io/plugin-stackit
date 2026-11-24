@@ -83,7 +83,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         var rDhcp = runContext.render(dhcp).as(Boolean.class).orElse(true);
         var rRouted = runContext.render(routed).as(Boolean.class).orElse(false);
         var rPrefix = runContext.render(prefixLength).as(Integer.class).orElse(24);
-        var rNameserver = nameserver == null ? null : runContext.render(nameserver).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rNameserver = runContext.render(nameserver).as(String.class).filter(value -> !value.isBlank()).orElse(null);
         var ipv4 = new CreateNetworkIPv4WithPrefixLength().prefixLength(rPrefix.longValue());
         if (rNameserver != null) {
             ipv4.addNameserversItem(rNameserver);
@@ -93,7 +93,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
             .dhcp(rDhcp)
             .routed(rRouted)
             .ipv4(new CreateNetworkIPv4(ipv4));
-        var rProjectId = java.util.UUID.fromString(runContext.render(getProjectId()).as(String.class)
+        var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));

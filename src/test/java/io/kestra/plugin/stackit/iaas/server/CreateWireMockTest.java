@@ -61,6 +61,28 @@ class CreateWireMockTest {
     }
 
     @Test
+    void rejectsNonUuidProjectId() throws Exception {
+        stubCreateServerSuccess();
+
+        Create task = Create.builder()
+            .id(IdUtils.create())
+            .type(Create.class.getName())
+            .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
+            .projectId(Property.ofValue("not-a-uuid"))
+            .region(Property.ofValue("eu01"))
+            .name(Property.ofValue("kestra-demo"))
+            .machineType(Property.ofValue("g2i.2"))
+            .availabilityZone(Property.ofValue("eu01-1"))
+            .imageId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
+            .bootVolumeSizeGiB(Property.ofValue(32))
+            .build();
+        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
+
+        var failure = assertThrows(IllegalArgumentException.class, () -> task.run(runContext));
+        assertThat(failure.getMessage(), containsString("projectId must be a valid UUID"));
+    }
+
+    @Test
     void mapsForbiddenToPermissionMessage() throws Exception {
         wireMock.stubFor(WireMock.post(urlPathMatching("/v2/projects/.*/regions/.*/servers"))
             .willReturn(aResponse().withStatus(403).withBody("{\"message\":\"forbidden\"}")));
