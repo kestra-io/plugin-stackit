@@ -40,7 +40,7 @@ public class Get extends AbstractStackitServerById implements RunnableTask<Get.O
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             var server = call(() -> client.api().getServer(rProjectId, rRegion, rServerId, false));
             return Output.builder()
                 .serverId(server.getId() == null ? null : server.getId().toString())

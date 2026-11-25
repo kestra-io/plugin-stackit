@@ -74,6 +74,7 @@ class CreateWireMockTest {
             .machineType(Property.ofValue("g2i.2"))
             .availabilityZone(Property.ofValue("eu01-1"))
             .imageId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
+            .networkId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
             .bootVolumeSizeGiB(Property.ofValue(32))
             .build();
         RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
@@ -105,6 +106,7 @@ class CreateWireMockTest {
             .machineType(Property.ofValue("g2i.2"))
             .availabilityZone(Property.ofValue("eu01-1"))
             .imageId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
+            .networkId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
             .bootVolumeSizeGiB(Property.ofValue(32))
             .build();
     }

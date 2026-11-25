@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Run only when real STACKIT credentials are available:
- * {@code STACKIT_LIVE_TEST=true STACKIT_SERVICE_ACCOUNT_KEY='...' STACKIT_PROJECT_ID='...' ./gradlew test --tests CreateLiveTest}
+ * {@code STACKIT_LIVE_TEST=true STACKIT_SERVICE_ACCOUNT_KEY='...' STACKIT_PROJECT_ID='...' STACKIT_IMAGE_ID='...' STACKIT_NETWORK_ID='...' ./gradlew test --tests CreateLiveTest}
  */
 @KestraTest
 @EnabledIfEnvironmentVariable(named = "STACKIT_LIVE_TEST", matches = "true")
@@ -33,6 +33,7 @@ class CreateLiveTest {
         String projectId = requiredEnv("STACKIT_PROJECT_ID");
         String region = System.getenv().getOrDefault("STACKIT_REGION", "eu01");
         String zone = System.getenv().getOrDefault("STACKIT_AVAILABILITY_ZONE", region + "-1");
+        String networkId = requiredEnv("STACKIT_NETWORK_ID");
 
         Create task = Create.builder()
             .id(IdUtils.create())
@@ -44,6 +45,7 @@ class CreateLiveTest {
             .machineType(Property.ofValue(System.getenv().getOrDefault("STACKIT_MACHINE_TYPE", "g2i.2")))
             .availabilityZone(Property.ofValue(zone))
             .imageId(Property.ofValue(requiredEnv("STACKIT_IMAGE_ID")))
+            .networkId(Property.ofValue(networkId))
             .build();
 
         String serverId = null;

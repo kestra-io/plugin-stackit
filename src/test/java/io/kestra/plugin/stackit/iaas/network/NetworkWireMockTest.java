@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 @KestraTest
 class NetworkWireMockTest {
@@ -62,6 +63,6 @@ class NetworkWireMockTest {
         assertThat(((Create.Output) StackitWireMock.run(runContextFactory, wireMock, create)).getNetworkId(), is(ID));
         var listOutput = (StackitListOutput.ListOutput) StackitWireMock.run(runContextFactory, wireMock, list);
         assertThat(listOutput.getRows().stream().map(row -> row.get("name")).toList(), hasItem("kestra-network"));
-        assertThat(((Delete.Output) StackitWireMock.run(runContextFactory, wireMock, delete)).getNetworkId(), is(ID));
+        assertThat(StackitWireMock.run(runContextFactory, wireMock, delete), nullValue());
     }
 }

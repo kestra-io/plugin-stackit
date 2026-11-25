@@ -51,7 +51,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Size in GiB",
-        description = "Volume capacity in gibibytes (GiB)."
+        description = """
+            Volume capacity in GiB. Allowed range is 1–16384.
+            """
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -86,7 +88,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             var volume = call(() -> client.api().createVolume(rProjectId, rRegion, payload));
             return Output.builder()
                 .volumeId(volume.getId() == null ? null : volume.getId().toString())

@@ -53,17 +53,32 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @NotNull
     private Property<@NotBlank String> name;
 
-    @Schema(title = "DHCP", description = "Defaults to true, as in the SDK example.")
+    @Schema(
+        title = "DHCP",
+        description = """
+            Enable DHCP for the network IPv4 block. Defaults to true.
+            """
+    )
     @PluginProperty(group = "advanced")
     @Builder.Default
     private Property<Boolean> dhcp = Property.ofValue(true);
 
-    @Schema(title = "Routed", description = "Defaults to false, as in the SDK example.")
+    @Schema(
+        title = "Routed",
+        description = """
+            Whether the network is routed. Defaults to false.
+            """
+    )
     @PluginProperty(group = "advanced")
     @Builder.Default
     private Property<Boolean> routed = Property.ofValue(false);
 
-    @Schema(title = "IPv4 prefix length", description = "Defaults to 24.")
+    @Schema(
+        title = "IPv4 prefix length",
+        description = """
+            Prefix length for the network IPv4 block. Allowed range is 8–30. Defaults to 24.
+            """
+    )
     @PluginProperty(group = "advanced")
     @Builder.Default
     private Property<@Min(8) @Max(30) Integer> prefixLength = Property.ofValue(24);
@@ -97,7 +112,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             var network = call(() -> client.api().createNetwork(rProjectId, rRegion, payload));
             return Output.builder()
                 .networkId(network.getId() == null ? null : network.getId().toString())

@@ -31,9 +31,9 @@ kestra:
 | `io.kestra.plugin.stackit.iaas.volume` | `Create`, `List`, `Delete` |
 | `io.kestra.plugin.stackit.iaas.network` | `Create`, `List`, `Delete` |
 
-`server.Create` follows the SDK example. `machineType` is required and must be a machine type name that exists in the region. The SDK sample name is `t2i.1`. `availabilityZone` is optional; leave it out and STACKIT chooses the zone. The image is the boot volume source (`imageId`, default disk size 32 GiB).
+`server.Create` requires `machineType`, `imageId`, and `networkId` (IaaS v2 sends `networking` on create). `availabilityZone` is optional. Boot disk size defaults to 32 GiB (allowed range 1–16384 GiB).
 
-`network.Create` sets `nameserver` only when you pass it in the flow. If you omit it, the task does not send a nameserver and STACKIT applies its platform default.
+`network.Create` sets `nameserver` only when you pass it in the flow. IPv4 prefix length defaults to 24 (allowed range 8–30).
 
 Run a flow such as:
 
@@ -42,6 +42,13 @@ id: stackit_create_server
 namespace: company.team
 
 tasks:
+  - id: create_network
+    type: io.kestra.plugin.stackit.iaas.network.Create
+    serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
+    projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
+    region: eu01
+    name: kestra-network
+
   - id: create_server
     type: io.kestra.plugin.stackit.iaas.server.Create
     serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
@@ -50,6 +57,7 @@ tasks:
     name: kestra-demo
     machineType: t2i.1
     imageId: "{{ secret('STACKIT_IMAGE_ID') }}"
+    networkId: "{{ outputs.create_network.networkId }}"
     bootVolumeSizeGiB: 32
 
   - id: log_server

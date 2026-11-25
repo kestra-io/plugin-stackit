@@ -47,7 +47,7 @@ public class List extends AbstractStackitList implements RunnableTask<StackitLis
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
         var rLabelSelector = runContext.render(getLabelSelector()).as(String.class).filter(value -> !value.isBlank()).orElse(null);
         var rFetchType = runContext.render(getFetchType()).as(FetchType.class).orElse(FetchType.FETCH);
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             var response = call(() -> client.api().listNetworks(rProjectId, rRegion, rLabelSelector));
             var ids = new ArrayList<String>();
             var names = new ArrayList<String>();

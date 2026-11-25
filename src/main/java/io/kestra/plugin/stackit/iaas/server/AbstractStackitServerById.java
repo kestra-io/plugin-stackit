@@ -42,7 +42,7 @@ public abstract class AbstractStackitServerById extends AbstractStackit {
             .orElseThrow(() -> new IllegalVariableEvaluationException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalVariableEvaluationException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             call(() -> {
                 operation.execute(client.api(), rProjectId, rRegion, rServerId);
                 return null;

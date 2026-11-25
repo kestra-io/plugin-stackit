@@ -42,6 +42,13 @@ import lombok.experimental.SuperBuilder;
             namespace: company.team
 
             tasks:
+              - id: create_network
+                type: io.kestra.plugin.stackit.iaas.network.Create
+                serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
+                projectId: "{{ secret('STACKIT_PROJECT_ID') }}"
+                region: eu01
+                name: kestra-network
+
               - id: create_server
                 type: io.kestra.plugin.stackit.iaas.server.Create
                 serviceAccountKey: "{{ secret('STACKIT_SERVICE_ACCOUNT_KEY') }}"
@@ -49,7 +56,8 @@ import lombok.experimental.SuperBuilder;
                 region: eu01
                 name: kestra-demo
                 machineType: t2i.1
-                imageId: 11111111-1111-1111-1111-111111111111
+                imageId: "{{ secret('STACKIT_IMAGE_ID') }}"
+                networkId: "{{ outputs.create_network.networkId }}"
                 bootVolumeSizeGiB: 32
 
               - id: log_server
@@ -70,7 +78,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "Machine type",
         description = """
-            Required machine type name that exists in the region. The SDK sample name is t2i.1.
+            Machine type name that exists in the region, for example t2i.1.
             """
     )
     @PluginProperty(group = "main")
@@ -79,7 +87,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Availability zone",
-        description = "Availability zone, for example eu01-1. Leave empty to let STACKIT choose."
+        description = """
+            Availability zone, for example eu01-1. Leave empty to let STACKIT choose.
+            """
     )
     @PluginProperty(group = "advanced")
     private Property<String> availabilityZone;
@@ -94,7 +104,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Boot volume size (GiB)",
-        description = "Boot disk size in GiB. Defaults to 32, as in the STACKIT Java SDK example."
+        description = """
+            Boot disk size in GiB. Allowed range is 1–16384. Defaults to 32.
+            """
     )
     @PluginProperty(group = "advanced")
     @Builder.Default
@@ -110,11 +122,12 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "Network ID",
         description = """
-            Optional network UUID to attach. Leave empty to use the project default network.
+            Network UUID to attach. Required for IaaS v2 server create (networking must be sent).
             """
     )
-    @PluginProperty(group = "advanced")
-    private Property<String> networkId;
+    @PluginProperty(group = "main")
+    @NotNull
+    private Property<@NotBlank String> networkId;
 
     @Override
     public Output run(RunContext runContext) throws Exception {
@@ -124,7 +137,8 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
         var rImageId = runContext.render(imageId).as(String.class).orElseThrow(() -> new IllegalArgumentException("imageId is required"));
         var rBootSize = runContext.render(bootVolumeSizeGiB).as(Integer.class).orElse(32);
         var rKeypair = runContext.render(keypairName).as(String.class).filter(value -> !value.isBlank()).orElse(null);
-        var rNetworkId = runContext.render(networkId).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rNetworkId = runContext.render(networkId).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("networkId is required"));
 
         runContext.logger().info("Creating STACKIT server '{}'.", rName);
 
@@ -136,23 +150,21 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
                 .size(rBootSize.longValue())
                 .source(new BootVolumeSource()
                     .id(uuid("imageId", rImageId))
-                    .type("image")));
+                    .type("image")))
+            .networking(new CreateServerPayloadAllOfNetworking(
+                new CreateServerNetworking().networkId(uuid("networkId", rNetworkId))
+            ));
         if (rZone != null) {
             payload.availabilityZone(rZone);
         }
         if (rKeypair != null) {
             payload.keypairName(rKeypair);
         }
-        if (rNetworkId != null) {
-            payload.networking(new CreateServerPayloadAllOfNetworking(
-                new CreateServerNetworking().networkId(uuid("networkId", rNetworkId))
-            ));
-        }
 
         var rProjectId = uuid("projectId", runContext.render(getProjectId()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class).orElseThrow(() -> new IllegalArgumentException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             var server = call(() -> client.api().createServer(rProjectId, rRegion, payload));
             var serverId = server.getId() == null ? null : server.getId().toString();
             return Output.builder()

@@ -5,6 +5,7 @@ import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
 import io.kestra.core.models.property.Property;
 import io.kestra.core.models.tasks.RunnableTask;
+import io.kestra.core.models.tasks.VoidOutput;
 import io.kestra.core.runners.RunContext;
 import io.kestra.plugin.stackit.auth.AbstractStackit;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,19 +39,24 @@ import lombok.experimental.SuperBuilder;
         region: eu01
         volumeId: 11111111-1111-1111-1111-111111111111
     """))
-public class Delete extends AbstractStackit implements RunnableTask<Delete.Output> {
+public class Delete extends AbstractStackit implements RunnableTask<VoidOutput> {
     @Schema(title = "Volume ID")
     @PluginProperty(group = "main")
     @NotNull
     private Property<@NotBlank String> volumeId;
 
-    @Schema(title = "Force", description = "Delete the volume even when it is still attached. Defaults to false.")
+    @Schema(
+        title = "Force",
+        description = """
+            Delete the volume even when it is still attached. Defaults to false.
+            """
+    )
     @PluginProperty(group = "advanced")
     @Builder.Default
     private Property<Boolean> force = Property.ofValue(false);
 
     @Override
-    public Output run(RunContext runContext) throws Exception {
+    public VoidOutput run(RunContext runContext) throws Exception {
         var rVolumeId = uuid("volumeId", runContext.render(volumeId).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("volumeId is required")));
         var rForce = runContext.render(force).as(Boolean.class).orElse(false);
@@ -58,19 +64,12 @@ public class Delete extends AbstractStackit implements RunnableTask<Delete.Outpu
             .orElseThrow(() -> new IllegalArgumentException("projectId is required")));
         var rRegion = runContext.render(getRegion()).as(String.class)
             .orElseThrow(() -> new IllegalArgumentException("region is required"));
-        try (IaasClient client = iaasClient(runContext)) {
+        try (var client = iaasClient(runContext)) {
             call(() -> {
                 client.api().deleteVolume(rProjectId, rRegion, rVolumeId, rForce);
                 return null;
             });
         }
-        return Output.builder().volumeId(rVolumeId.toString()).build();
-    }
-
-    @Builder
-    @Getter
-    public static class Output implements io.kestra.core.models.tasks.Output {
-        @Schema(title = "Volume ID")
-        private final String volumeId;
+        return null;
     }
 }
