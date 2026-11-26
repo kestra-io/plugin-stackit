@@ -3,7 +3,6 @@ package io.kestra.plugin.stackit.iaas.network;
 import cloud.stackit.sdk.iaas.v2api.model.CreateNetworkIPv4;
 import cloud.stackit.sdk.iaas.v2api.model.CreateNetworkIPv4WithPrefixLength;
 import cloud.stackit.sdk.iaas.v2api.model.CreateNetworkPayload;
-import cloud.stackit.sdk.iaas.v2api.model.Network;
 import io.kestra.core.models.annotations.Example;
 import io.kestra.core.models.annotations.Plugin;
 import io.kestra.core.models.annotations.PluginProperty;
@@ -76,7 +75,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "IPv4 prefix length",
         description = """
-            Prefix length for the network IPv4 block. Allowed range is 8–30. Defaults to 24.
+            Prefix length for the network IPv4 block. Allowed range is 8 to 30. Defaults to 24.
             """
     )
     @PluginProperty(group = "advanced")

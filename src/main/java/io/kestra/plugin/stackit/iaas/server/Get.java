@@ -17,7 +17,12 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "Get a STACKIT server", description = "Fetches one server by id.")
+@Schema(
+    title = "Get a STACKIT server",
+    description = """
+        Fetches one server by id.
+        """
+)
 @Plugin(examples = @Example(title = "Get a server", full = true, code = """
     id: stackit_get_server
     namespace: company.team

@@ -31,7 +31,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Schema(
     title = "Create a STACKIT server",
-    description = "Creates a server in a STACKIT project and region."
+    description = """
+        Creates a server in a STACKIT project and region.
+        """
 )
 @Plugin(examples = {
     @Example(
@@ -69,7 +71,9 @@ import lombok.experimental.SuperBuilder;
 public class Create extends AbstractStackit implements RunnableTask<Create.Output> {
     @Schema(
         title = "Server name",
-        description = "Name of the server to create."
+        description = """
+            Name of the server to create.
+            """
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -96,7 +100,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Image ID",
-        description = "Operating system image UUID used as the boot volume source."
+        description = """
+            Operating system image UUID used as the boot volume source.
+            """
     )
     @PluginProperty(group = "main")
     @NotNull
@@ -105,7 +111,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "Boot volume size (GiB)",
         description = """
-            Boot disk size in GiB. Allowed range is 1–16384. Defaults to 32.
+            Boot disk size in GiB. Allowed range is 1 to 16384. Defaults to 32.
             """
     )
     @PluginProperty(group = "advanced")
@@ -114,7 +120,9 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Keypair name",
-        description = "Optional SSH keypair already created in the project."
+        description = """
+            Optional SSH keypair already created in the project.
+            """
     )
     @PluginProperty(group = "advanced")
     private Property<String> keypairName;
@@ -122,7 +130,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "Network ID",
         description = """
-            Network UUID to attach. Required for IaaS v2 server create (networking must be sent).
+            Network UUID the server is attached to.
             """
     )
     @PluginProperty(group = "main")

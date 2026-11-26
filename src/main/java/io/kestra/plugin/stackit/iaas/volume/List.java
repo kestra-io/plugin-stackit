@@ -24,7 +24,9 @@ import java.util.ArrayList;
 @NoArgsConstructor
 @Schema(
     title = "List STACKIT volumes",
-    description = "Lists all volumes in a STACKIT project and region."
+    description = """
+        Lists all volumes in a STACKIT project and region.
+        """
 )
 @Plugin(examples = @Example(title = "List volumes", full = true, code = """
     id: stackit_list_volumes

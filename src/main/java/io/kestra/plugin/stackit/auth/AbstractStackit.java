@@ -56,7 +56,9 @@ public abstract class AbstractStackit extends Task {
 
     @Schema(
         title = "Project ID",
-        description = "STACKIT project UUID."
+        description = """
+            STACKIT project UUID.
+            """
     )
     @PluginProperty(group = "connection")
     @NotNull
@@ -64,7 +66,9 @@ public abstract class AbstractStackit extends Task {
 
     @Schema(
         title = "Region",
-        description = "STACKIT region, for example eu01."
+        description = """
+            STACKIT region, for example eu01.
+            """
     )
     @PluginProperty(group = "connection")
     @NotNull

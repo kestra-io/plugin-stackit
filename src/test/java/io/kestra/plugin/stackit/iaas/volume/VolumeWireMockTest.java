@@ -13,6 +13,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -40,23 +42,23 @@ class VolumeWireMockTest {
 
     @Test
     void createsListsAndDeletesAVolume() throws Exception {
-        String volume = """
+        var volume = """
             {"id":"%s","name":"kestra-data","size":10,"status":"AVAILABLE","availabilityZone":"eu01-1"}
             """.formatted(ID);
         StackitWireMock.stubJson(wireMock, "POST", "/v2/projects/.*/regions/.*/volumes$", volume);
-        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/volumes$", "{\"items\":[" + volume + "]}");
+        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/volumes$", "{\"items\":[%s]}".formatted(volume));
         StackitWireMock.stubEmpty(wireMock, "DELETE", "/v2/projects/.*/regions/.*/volumes/[^/]+$");
 
-        Create create = Create.builder()
+        var create = Create.builder()
             .id(IdUtils.create()).type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .name(Property.ofValue("kestra-data")).sizeGiB(Property.ofValue(10)).availabilityZone(Property.ofValue("eu01-1"))
             .build();
-        List list = List.builder()
+        var list = List.builder()
             .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
-        Delete delete = Delete.builder()
+        var delete = Delete.builder()
             .id(IdUtils.create()).type(Delete.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).volumeId(Property.ofValue(ID))
             .build();
@@ -65,5 +67,6 @@ class VolumeWireMockTest {
         var listOutput = (StackitListOutput.ListOutput) StackitWireMock.run(runContextFactory, wireMock, list);
         assertThat(listOutput.getRows().stream().map(row -> row.get("name")).toList(), hasItem("kestra-data"));
         assertThat(StackitWireMock.run(runContextFactory, wireMock, delete), nullValue());
+        wireMock.verify(deleteRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/volumes/%s".formatted(ID))));
     }
 }

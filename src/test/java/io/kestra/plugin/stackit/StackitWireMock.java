@@ -21,7 +21,7 @@ public final class StackitWireMock {
     }
 
     public static WireMockServer start() {
-        WireMockServer wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().port(WIREMOCK_PORT));
+        var wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().port(WIREMOCK_PORT));
         wireMock.start();
         WireMock.configureFor("localhost", wireMock.port());
         wireMock.stubFor(WireMock.post(WireMock.urlPathEqualTo("/token"))

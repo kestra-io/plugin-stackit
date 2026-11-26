@@ -27,7 +27,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Schema(
     title = "Create a STACKIT volume",
-    description = "Creates a data volume in GiB."
+    description = """
+        Creates a data volume in GiB.
+        """
 )
 @Plugin(examples = @Example(title = "Create a volume", full = true, code = """
     id: stackit_create_volume
@@ -52,7 +54,7 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     @Schema(
         title = "Size in GiB",
         description = """
-            Volume capacity in GiB. Allowed range is 1–16384.
+            Volume capacity in GiB. Allowed range is 1 to 16384.
             """
     )
     @PluginProperty(group = "main")
@@ -61,11 +63,13 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
 
     @Schema(
         title = "Availability zone",
-        description = "Availability zone, for example eu01-1."
+        description = """
+            Availability zone, for example eu01-1.
+            """
     )
     @PluginProperty(group = "main")
     @NotNull
-    private Property<String> availabilityZone;
+    private Property<@NotBlank String> availabilityZone;
 
     @Schema(title = "Performance class")
     @PluginProperty(group = "advanced")
@@ -75,12 +79,10 @@ public class Create extends AbstractStackit implements RunnableTask<Create.Outpu
     public Output run(RunContext runContext) throws Exception {
         var rName = runContext.render(name).as(String.class).orElseThrow(() -> new IllegalArgumentException("name is required"));
         var rSize = runContext.render(sizeGiB).as(Integer.class).orElseThrow(() -> new IllegalArgumentException("sizeGiB is required"));
-        var payload = new CreateVolumePayload().name(rName).size(rSize.longValue());
-        var rZone = runContext.render(availabilityZone).as(String.class).filter(value -> !value.isBlank()).orElse(null);
+        var rZone = runContext.render(availabilityZone).as(String.class)
+            .orElseThrow(() -> new IllegalArgumentException("availabilityZone is required"));
+        var payload = new CreateVolumePayload().name(rName).size(rSize.longValue()).availabilityZone(rZone);
         var rPerformance = runContext.render(performanceClass).as(String.class).filter(value -> !value.isBlank()).orElse(null);
-        if (rZone != null) {
-            payload.availabilityZone(rZone);
-        }
         if (rPerformance != null) {
             payload.performanceClass(rPerformance);
         }

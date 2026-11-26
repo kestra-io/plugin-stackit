@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,22 +51,23 @@ class CreateWireMockTest {
     void createsServerThroughWireMock() throws Exception {
         stubCreateServerSuccess();
 
-        Create task = baseTask();
-        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
+        var task = baseTask();
+        var runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
 
-        Create.Output output = task.run(runContext);
+        var output = task.run(runContext);
 
         assertThat(output.getServerId(), is(StackitTestFixtures.SERVER_ID.toString()));
         assertThat(output.getName(), is("kestra-demo"));
         assertThat(output.getStatus(), is("ACTIVE"));
-        wireMock.verify(postRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/servers")));
+        wireMock.verify(postRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/servers"))
+            .withRequestBody(matchingJsonPath("$.networking.networkId", equalTo(StackitTestFixtures.SERVER_ID.toString()))));
     }
 
     @Test
     void rejectsNonUuidProjectId() throws Exception {
         stubCreateServerSuccess();
 
-        Create task = Create.builder()
+        var task = Create.builder()
             .id(IdUtils.create())
             .type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
@@ -77,7 +80,7 @@ class CreateWireMockTest {
             .networkId(Property.ofValue(StackitTestFixtures.SERVER_ID.toString()))
             .bootVolumeSizeGiB(Property.ofValue(32))
             .build();
-        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
+        var runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
 
         var failure = assertThrows(IllegalArgumentException.class, () -> task.run(runContext));
         assertThat(failure.getMessage(), containsString("projectId must be a valid UUID"));
@@ -88,10 +91,10 @@ class CreateWireMockTest {
         wireMock.stubFor(WireMock.post(urlPathMatching("/v2/projects/.*/regions/.*/servers"))
             .willReturn(aResponse().withStatus(403).withBody("{\"message\":\"forbidden\"}")));
 
-        Create task = baseTask();
-        RunContext runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
+        var task = baseTask();
+        var runContext = StackitTestRunContext.forTask(runContextFactory, task, Map.of());
 
-        Exception failure = assertThrows(Exception.class, () -> task.run(runContext));
+        var failure = assertThrows(Exception.class, () -> task.run(runContext));
         assertThat(failure.getMessage(), containsString("Check the service account permissions"));
     }
 

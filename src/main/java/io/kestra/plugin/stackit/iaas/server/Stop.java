@@ -18,7 +18,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Stop a STACKIT server",
-    description = "Stops a server in a STACKIT project and region."
+    description = """
+        Stops a server in a STACKIT project and region.
+        """
 )
 @Plugin(examples = @Example(title = "Stop a server", full = true, code = """
     id: stackit_stop_server

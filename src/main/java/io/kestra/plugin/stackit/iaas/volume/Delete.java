@@ -25,7 +25,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Schema(
     title = "Delete a STACKIT volume",
-    description = "Deletes a volume in a project and region."
+    description = """
+        Deletes a volume in a project and region.
+        """
 )
 @Plugin(examples = @Example(title = "Delete a volume", full = true, code = """
     id: stackit_delete_volume

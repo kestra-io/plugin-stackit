@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class AbstractStackitTest {
     @Test
     void translatesForbiddenIntoAPermissionMessage() {
-        Exception translated = AbstractStackit.translate(new ApiException(403, "forbidden"));
+        var translated = AbstractStackit.translate(new ApiException(403, "forbidden"));
 
         assertThat(translated.getMessage(), containsString("403"));
         assertThat(translated.getMessage(), containsString("Check the service account permissions"));
@@ -20,7 +20,7 @@ class AbstractStackitTest {
 
     @Test
     void keepsTheStatusForOtherApiErrors() {
-        Exception translated = AbstractStackit.translate(new ApiException(404, "missing"));
+        var translated = AbstractStackit.translate(new ApiException(404, "missing"));
 
         assertThat(translated.getMessage(), containsString("404"));
         assertThat(translated.getMessage(), containsString("missing"));
@@ -33,7 +33,7 @@ class AbstractStackitTest {
 
     @Test
     void rejectsServiceAccountKeyWithoutPrivateKey() {
-        IllegalArgumentException exception = assertThrows(
+        var exception = assertThrows(
             IllegalArgumentException.class,
             () -> AbstractStackit.requireEmbeddedPrivateKey("{\"id\":\"key\",\"credentials\":{}}")
         );

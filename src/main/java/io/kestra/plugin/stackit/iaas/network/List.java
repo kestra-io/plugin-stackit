@@ -24,7 +24,9 @@ import java.util.ArrayList;
 @NoArgsConstructor
 @Schema(
     title = "List STACKIT networks",
-    description = "Lists networks in a project and region."
+    description = """
+        Lists networks in a project and region.
+        """
 )
 @Plugin(examples = @Example(title = "List networks", full = true, code = """
     id: stackit_list_networks

@@ -29,19 +29,19 @@ class CreateLiveTest {
 
     @Test
     void createsServerInStackit() throws Exception {
-        String serviceAccountKey = requiredEnv("STACKIT_SERVICE_ACCOUNT_KEY");
-        String projectId = requiredEnv("STACKIT_PROJECT_ID");
-        String region = System.getenv().getOrDefault("STACKIT_REGION", "eu01");
-        String zone = System.getenv().getOrDefault("STACKIT_AVAILABILITY_ZONE", region + "-1");
-        String networkId = requiredEnv("STACKIT_NETWORK_ID");
+        var serviceAccountKey = requiredEnv("STACKIT_SERVICE_ACCOUNT_KEY");
+        var projectId = requiredEnv("STACKIT_PROJECT_ID");
+        var region = System.getenv().getOrDefault("STACKIT_REGION", "eu01");
+        var zone = System.getenv().getOrDefault("STACKIT_AVAILABILITY_ZONE", "%s-1".formatted(region));
+        var networkId = requiredEnv("STACKIT_NETWORK_ID");
 
-        Create task = Create.builder()
+        var task = Create.builder()
             .id(IdUtils.create())
             .type(Create.class.getName())
             .serviceAccountKey(Property.ofValue(serviceAccountKey))
             .projectId(Property.ofValue(projectId))
             .region(Property.ofValue(region))
-            .name(Property.ofValue("kestra-live-" + IdUtils.create().substring(0, 8)))
+            .name(Property.ofValue("kestra-live-%s".formatted(IdUtils.create().substring(0, 8))))
             .machineType(Property.ofValue(System.getenv().getOrDefault("STACKIT_MACHINE_TYPE", "g2i.2")))
             .availabilityZone(Property.ofValue(zone))
             .imageId(Property.ofValue(requiredEnv("STACKIT_IMAGE_ID")))
@@ -50,14 +50,14 @@ class CreateLiveTest {
 
         String serverId = null;
         try {
-            RunContext runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
-            Create.Output output = task.run(runContext);
+            var runContext = TestsUtils.mockRunContext(runContextFactory, task, Map.of());
+            var output = task.run(runContext);
             serverId = output.getServerId();
             assertThat(serverId, notNullValue());
             UUID.fromString(serverId);
         } finally {
             if (serverId != null) {
-                Delete delete = Delete.builder()
+                var delete = Delete.builder()
                     .id(IdUtils.create())
                     .type(Delete.class.getName())
                     .serviceAccountKey(Property.ofValue(serviceAccountKey))
@@ -68,16 +68,16 @@ class CreateLiveTest {
                 try {
                     delete.run(TestsUtils.mockRunContext(runContextFactory, delete, Map.of()));
                 } catch (Exception exception) {
-                    throw new IllegalStateException("Failed to delete live test server " + serverId, exception);
+                    throw new IllegalStateException("Failed to delete live test server %s".formatted(serverId), exception);
                 }
             }
         }
     }
 
     private static String requiredEnv(String name) {
-        String value = System.getenv(name);
+        var value = System.getenv(name);
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException(name + " must be set for CreateLiveTest.");
+            throw new IllegalStateException("%s must be set for CreateLiveTest.".formatted(name));
         }
         return value;
     }

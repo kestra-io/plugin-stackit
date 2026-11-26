@@ -31,9 +31,9 @@ kestra:
 | `io.kestra.plugin.stackit.iaas.volume` | `Create`, `List`, `Delete` |
 | `io.kestra.plugin.stackit.iaas.network` | `Create`, `List`, `Delete` |
 
-`server.Create` requires `machineType`, `imageId`, and `networkId` (IaaS v2 sends `networking` on create). `availabilityZone` is optional. Boot disk size defaults to 32 GiB (allowed range 1–16384 GiB).
+`server.Create` requires `machineType`, `imageId`, and `networkId` (the server is attached to that network). `availabilityZone` is optional. Boot disk size defaults to 32 GiB (allowed range 1 to 16384 GiB).
 
-`network.Create` sets `nameserver` only when you pass it in the flow. IPv4 prefix length defaults to 24 (allowed range 8–30).
+`network.Create` sets `nameserver` only when you pass it in the flow. IPv4 prefix length defaults to 24 (allowed range 8 to 30).
 
 Run a flow such as:
 

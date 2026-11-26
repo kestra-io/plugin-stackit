@@ -18,7 +18,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Delete a STACKIT server",
-    description = "Deletes a server in a STACKIT project and region."
+    description = """
+        Deletes a server in a STACKIT project and region.
+        """
 )
 @Plugin(examples = @Example(title = "Delete a server", full = true, code = """
     id: stackit_delete_server

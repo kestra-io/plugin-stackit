@@ -23,7 +23,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Delete a STACKIT network",
-    description = "Deletes a network in a STACKIT project and region."
+    description = """
+        Deletes a network in a STACKIT project and region.
+        """
 )
 @Plugin(examples = @Example(title = "Delete a network", full = true, code = """
     id: stackit_delete_network

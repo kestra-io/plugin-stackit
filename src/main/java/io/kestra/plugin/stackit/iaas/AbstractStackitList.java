@@ -34,7 +34,9 @@ public abstract class AbstractStackitList extends AbstractStackit {
 
     @Schema(
         title = "Label selector",
-        description = "Optional STACKIT label selector filter."
+        description = """
+            Optional STACKIT label selector filter.
+            """
     )
     @PluginProperty(group = "advanced")
     private Property<String> labelSelector;

@@ -18,7 +18,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @NoArgsConstructor
 @Schema(title = "Start a STACKIT server",
-    description = "Starts a server in a STACKIT project and region."
+    description = """
+        Starts a server in a STACKIT project and region.
+        """
 )
 @Plugin(examples = @Example(title = "Start a server", full = true, code = """
     id: stackit_start_server

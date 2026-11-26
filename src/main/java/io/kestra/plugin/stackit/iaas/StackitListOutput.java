@@ -15,6 +15,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public final class StackitListOutput {
 
@@ -24,13 +25,33 @@ public final class StackitListOutput {
     @Builder
     @Getter
     public static class ListOutput implements Output {
-        @Schema(title = "Rows", description = "Set when fetchType is FETCH.")
+        @Schema(
+            title = "Rows",
+            description = """
+                Set when fetchType is FETCH.
+                """
+        )
         private final List<Map<String, Object>> rows;
-        @Schema(title = "First row", description = "Set when fetchType is FETCH_ONE.")
+        @Schema(
+            title = "First row",
+            description = """
+                Set when fetchType is FETCH_ONE.
+                """
+        )
         private final Map<String, Object> row;
-        @Schema(title = "Storage URI", description = "Set when fetchType is STORE.")
+        @Schema(
+            title = "Storage URI",
+            description = """
+                Set when fetchType is STORE.
+                """
+        )
         private final URI uri;
-        @Schema(title = "Size", description = "Number of items listed.")
+        @Schema(
+            title = "Size",
+            description = """
+                Number of items listed.
+                """
+        )
         private final Long size;
     }
 
@@ -72,9 +93,9 @@ public final class StackitListOutput {
     }
 
     private static List<Map<String, Object>> toRows(List<String> ids, List<String> names) {
-        return java.util.stream.IntStream.range(0, ids.size())
-            .mapToObj(index -> {
-                Map<String, Object> row = new HashMap<>();
+        return IntStream.range(0, ids.size())
+            .<Map<String, Object>>mapToObj(index -> {
+                var row = new HashMap<String, Object>();
                 row.put("id", ids.get(index));
                 row.put("name", names.get(index));
                 return row;

@@ -22,7 +22,12 @@ import java.util.ArrayList;
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @NoArgsConstructor
-@Schema(title = "List STACKIT servers", description = "Lists servers in a project and region.")
+@Schema(
+    title = "List STACKIT servers",
+    description = """
+        Lists servers in a project and region.
+        """
+)
 @Plugin(examples = @Example(title = "List servers", full = true, code = """
     id: stackit_list_servers
     namespace: company.team

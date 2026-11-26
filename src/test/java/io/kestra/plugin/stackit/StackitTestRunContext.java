@@ -14,7 +14,7 @@ public final class StackitTestRunContext {
     }
 
     public static RunContext forTask(RunContextFactory runContextFactory, Task task, Map<String, Object> inputs) {
-        DefaultRunContext runContext = (DefaultRunContext) TestsUtils.mockRunContext(runContextFactory, task, inputs);
+        var runContext = (DefaultRunContext) TestsUtils.mockRunContext(runContextFactory, task, inputs);
         return runContext.cloneForPlugin(task);
     }
 }

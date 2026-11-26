@@ -23,7 +23,7 @@ Single-module plugin. Source packages under `io.kestra.plugin`:
 - `stackit.iaas.volume` (`Create`, `List`, `Delete`)
 - `stackit.iaas.network` (`Create`, `List`, `Delete`)
 
-`server.Create` uses `machineType` (sample `t2i.1`) and a boot volume from `imageId` (default 32 GiB). `availabilityZone` is optional.
+`server.Create` uses `machineType` (sample `t2i.1`), a boot volume from `imageId` (default 32 GiB) and the required `networkId`. `availabilityZone` is optional.
 
 Examples use the secrets `STACKIT_SERVICE_ACCOUNT_KEY`, `STACKIT_PROJECT_ID`, and `STACKIT_IMAGE_ID`.
 

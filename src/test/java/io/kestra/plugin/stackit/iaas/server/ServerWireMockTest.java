@@ -14,6 +14,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
@@ -42,32 +45,32 @@ class ServerWireMockTest {
 
     @Test
     void getsListsStartsStopsAndDeletesAServer() throws Exception {
-        String server = """
+        var server = """
             {"id":"%s","name":"kestra-demo","status":"ACTIVE","powerStatus":"RUNNING","machineType":"g2i.2","availabilityZone":"eu01-1"}
             """.formatted(ID);
         StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers/[^/]+$", server);
-        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[" + server + "]}");
+        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[%s]}".formatted(server));
         StackitWireMock.stubEmpty(wireMock, "POST", "/v2/projects/.*/regions/.*/servers/[^/]+/start");
         StackitWireMock.stubEmpty(wireMock, "POST", "/v2/projects/.*/regions/.*/servers/[^/]+/stop");
         StackitWireMock.stubEmpty(wireMock, "DELETE", "/v2/projects/.*/regions/.*/servers/[^/]+$");
 
-        Get get = Get.builder()
+        var get = Get.builder()
             .id(IdUtils.create()).type(Get.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
-        List list = List.builder()
+        var list = List.builder()
             .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01"))
             .build();
-        Start start = Start.builder()
+        var start = Start.builder()
             .id(IdUtils.create()).type(Start.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
-        Stop stop = Stop.builder()
+        var stop = Stop.builder()
             .id(IdUtils.create()).type(Stop.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
-        Delete delete = Delete.builder()
+        var delete = Delete.builder()
             .id(IdUtils.create()).type(Delete.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson())).projectId(Property.ofValue(PROJECT)).region(Property.ofValue("eu01")).serverId(Property.ofValue(ID))
             .build();
@@ -78,16 +81,19 @@ class ServerWireMockTest {
         assertThat(StackitWireMock.run(runContextFactory, wireMock, start), nullValue());
         assertThat(StackitWireMock.run(runContextFactory, wireMock, stop), nullValue());
         assertThat(StackitWireMock.run(runContextFactory, wireMock, delete), nullValue());
+        wireMock.verify(postRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/servers/%s/start".formatted(ID))));
+        wireMock.verify(postRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/servers/%s/stop".formatted(ID))));
+        wireMock.verify(deleteRequestedFor(urlPathMatching("/v2/projects/.*/regions/.*/servers/%s".formatted(ID))));
     }
 
     @Test
     void fetchOneReturnsFirstRowOnly() throws Exception {
-        String server = """
+        var server = """
             {"id":"%s","name":"kestra-demo","status":"ACTIVE","powerStatus":"RUNNING","machineType":"g2i.2","availabilityZone":"eu01-1"}
             """.formatted(ID);
-        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[" + server + "]}");
+        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[%s]}".formatted(server));
 
-        List list = List.builder()
+        var list = List.builder()
             .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
             .projectId(Property.ofValue(PROJECT))
@@ -95,7 +101,7 @@ class ServerWireMockTest {
             .fetchType(Property.ofValue(FetchType.FETCH_ONE))
             .build();
 
-        StackitListOutput.ListOutput output = StackitWireMock.run(runContextFactory, wireMock, list);
+        var output = StackitWireMock.run(runContextFactory, wireMock, list);
         assertThat(output.getSize(), is(1L));
         assertThat(output.getRow().get("id"), is(ID));
         assertThat(output.getRows(), nullValue());
@@ -104,12 +110,12 @@ class ServerWireMockTest {
 
     @Test
     void storeWritesListToInternalStorage() throws Exception {
-        String server = """
+        var server = """
             {"id":"%s","name":"kestra-demo","status":"ACTIVE","powerStatus":"RUNNING","machineType":"g2i.2","availabilityZone":"eu01-1"}
             """.formatted(ID);
-        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[" + server + "]}");
+        StackitWireMock.stubJson(wireMock, "GET", "/v2/projects/.*/regions/.*/servers$", "{\"items\":[%s]}".formatted(server));
 
-        List list = List.builder()
+        var list = List.builder()
             .id(IdUtils.create()).type(List.class.getName())
             .serviceAccountKey(Property.ofValue(StackitTestFixtures.serviceAccountKeyJson()))
             .projectId(Property.ofValue(PROJECT))
@@ -117,7 +123,7 @@ class ServerWireMockTest {
             .fetchType(Property.ofValue(FetchType.STORE))
             .build();
 
-        StackitListOutput.ListOutput output = StackitWireMock.run(runContextFactory, wireMock, list);
+        var output = StackitWireMock.run(runContextFactory, wireMock, list);
         assertThat(output.getSize(), is(1L));
         assertThat(output.getUri(), notNullValue());
         assertThat(output.getRows(), nullValue());

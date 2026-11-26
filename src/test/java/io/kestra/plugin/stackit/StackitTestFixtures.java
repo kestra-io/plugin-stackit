@@ -21,11 +21,11 @@ public final class StackitTestFixtures {
 
     private static String buildServiceAccountKeyJson() {
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
-            KeyPair keyPair = keyPairGenerator.generateKeyPair();
-            String privateKeyPem = toPem(keyPair.getPrivate().getEncoded());
-            String escapedPem = privateKeyPem.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+            var keyPair = keyPairGenerator.generateKeyPair();
+            var privateKeyPem = toPem(keyPair.getPrivate().getEncoded());
+            var escapedPem = privateKeyPem.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
             return """
                 {
                   "id": "test-key-id",
@@ -51,7 +51,7 @@ public final class StackitTestFixtures {
     }
 
     private static String toPem(byte[] pkcs8) {
-        String body = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(pkcs8);
-        return "-----BEGIN PRIVATE KEY-----\n" + body + "\n-----END PRIVATE KEY-----";
+        var body = Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(pkcs8);
+        return "-----BEGIN PRIVATE KEY-----\n%s\n-----END PRIVATE KEY-----".formatted(body);
     }
 }
