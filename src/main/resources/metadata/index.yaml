@@ -2,7 +2,7 @@ group: io.kestra.plugin.stackit
 name: "stackit"
 title: "STACKIT"
 description: "STACKIT plugin for Kestra"
-body: ""
+body: "This plugin provides STACKIT IaaS integration: servers (create, get, list, start, stop, delete), volumes (create, list, delete), and networks (create, list, delete)."
 videos: []
 createdBy: "Kestra Core Team"
 managedBy: "Kestra Core Team"
